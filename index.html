@@ -232,8 +232,9 @@ const HAIRC = ['#3b2416','#17171c','#a0522d','#e2b64e','#ff7eb6','#3a86ff'];
 const COLORS = ['#ff6b4a','#3a86ff','#22b8a7','#ffbe0b','#8f6bff','#ff5fa2','#2b2d42','#f4f4f4'];
 const OUTFITS = [{id:'tee',cost:0},{id:'soccer',cost:0},{id:'hero',cost:40},{id:'pirate',cost:60},{id:'astro',cost:80},{id:'dino',cost:100}];
 const HATS = [{id:'none',cost:0},{id:'cap',cost:0},{id:'glasses',cost:0},{id:'phones',cost:30},{id:'sun',cost:20},{id:'crown',cost:60}];
-const PETS = [{id:'none',cost:0},{id:'dog',cost:0},{id:'cat',cost:0},{id:'falcon',cost:40},{id:'camel',cost:60},{id:'pony',cost:60},{id:'dino',cost:90}];
-let AV = Object.assign({kind:0, skin:1, hair:0, hairC:0, outfit:0, color:0, hat:0, pet:1, name:''}, store.get('corri3-avatar', {}));
+const PETS = [{id:'none',cost:0},{id:'dog',cost:0,hidden:true},{id:'cat',cost:0},{id:'falcon',cost:40},{id:'camel',cost:60},{id:'pony',cost:60},{id:'dino',cost:90}];
+let AV = Object.assign({kind:0, skin:1, hair:0, hairC:0, outfit:0, color:0, hat:0, pet:0, name:''}, store.get('corri3-avatar', {}));
+if (AV.pet===1) AV.pet = 0;
 let owned = new Set(store.get('corri3-owned', []));
 let bank = store.get('corri3-bank', 0);
 const hasItem = (cat, i, list)=> list[i].cost === 0 || owned.has(cat+':'+i);
@@ -247,21 +248,24 @@ const POWERS = {
   blocks:{dur:12, name:'Mondo Minecraft', hint:'Tutto diventa a cubetti! Costruisci ponti e rompi gli ostacoli.'},
   truck:{dur:8, name:'Monster truck', hint:'Sfonda tutti gli ostacoli!'},
   piano:{dur:12, name:'Pianola magica', hint:'Fa apparire i tasti per attraversare!'},
-  fly:{dur:7, name:'Super volo', hint:'Tieni premuto il dito per volare!'}
+  fly:{dur:7, name:'Super volo', hint:'Tieni premuto il dito per volare!'},
+  geo:{dur:10, name:'Geometry Dash', hint:'Diventi un cubo velocissimo! Salta le punte e tieni premuto per saltare di continuo.'}
 };
 const LEVELS = [
-  {name:'Abu Dhabi', theme:'city', pow:'shoes', speed:285, length:6800},
-  {name:'La scuola', theme:'school', pow:'lego', speed:295, length:7200},
-  {name:'Bebè', theme:'nursery', pow:null, speed:235, length:5600, baby:true, extra:true},
-  {name:'Il deserto', theme:'desert', pow:'blocks', speed:305, length:7600},
-  {name:'Ronciglione', theme:'town', pow:'piano', speed:315, length:8000},
+  {name:'Abu Dhabi', theme:'city', pow:'shoes', speed:305, length:7200},
+  {name:'La scuola', theme:'school', pow:'lego', speed:318, length:7600},
+  {name:'Bebè', theme:'nursery', pow:null, speed:245, length:5800, baby:true, extra:true},
+  {name:'Il deserto', theme:'desert', pow:'blocks', speed:330, length:8000},
+  {name:'Ronciglione', theme:'town', pow:'piano', speed:340, length:8400},
   {name:'Corsa a vuoto', type:'race', theme:'town', extra:true},
-  {name:'Lago di Vico', theme:'lake', pow:'fly', speed:320, length:8200},
-  {name:'Scacchi', theme:'chess', pow:'truck', speed:330, length:8600},
-  {name:'Gran finale', theme:'mix', pow:null, speed:335, length:12600}
+  {name:'Lago di Vico', theme:'lake', pow:'fly', speed:345, length:8600},
+  {name:'Scacchi', theme:'chess', pow:'truck', speed:355, length:9000},
+  {name:'Geometria', theme:'geo', pow:'geo', speed:360, length:9000},
+  {name:'Gran finale', theme:'mix', pow:null, speed:362, length:14700}
 ];
-const MIX = ['city','school','desert','town','lake','chess'];
-const THEME_POW = {city:'shoes', school:'lego', desert:'blocks', town:'piano', lake:'fly', chess:'truck', nursery:'lego'};
+const MIX = ['city','school','desert','town','lake','chess','geo'];
+const ALL_POWS = ['shoes','lego','blocks','truck','piano','fly','geo'];
+const THEME_POW = {city:'shoes', school:'lego', desert:'blocks', town:'piano', lake:'fly', chess:'truck', nursery:'lego', geo:'geo'};
 const THEMES = {
   city:   {sky:['#2a1b5e','#9b3f86','#ff8a5c','#ffd08a'], ground:'#1a1238', item:'star', obst:['ac','cone','crate']},
   school: {sky:['#4fb3ff','#86cdff','#c4e8ff','#eaf7ff'], ground:'#6a4a8a', item:'star', obst:['bag','ball','books']},
@@ -269,7 +273,8 @@ const THEMES = {
   desert: {sky:['#5aa9e6','#9fd0ef','#ffe0a3','#ffc773'], ground:'#c98a45', item:'gem', obst:['rock','weed','rock']},
   town:   {sky:['#3d8fe0','#74baf3','#bfe6ff','#eaf8ff'], ground:'#5a4a3a', item:'nut', obst:['barrel','sack','pot']},
   lake:   {sky:['#6cb6f0','#a3d5f7','#d9f0ff','#f2fbff'], ground:'#1f5f96', item:'nut', obst:['duck','crate','duck']},
-  chess:  {sky:['#1d1640','#3b2a7a','#7b4fb8','#c48fe0'], ground:'#120c2a', item:'crown', obst:['pawn','knight','rook']}
+  chess:  {sky:['#1d1640','#3b2a7a','#7b4fb8','#c48fe0'], ground:'#120c2a', item:'crown', obst:['pawn','knight','rook']},
+  geo:    {sky:['#0b0630','#1b0f5e','#2e1a8a','#4a2bb8'], ground:'#07041c', item:'orb', obst:['spike','saw','spike']}
 };
 function unlockedPows(li){ const s = []; for (let i=0;i<=li;i++) if (LEVELS[i].pow) s.push(LEVELS[i].pow); return s.length ? s : ['shoes']; }
 
@@ -280,7 +285,7 @@ function genLevel(li){
   L.segLen = segLen;
   const themeAt = x => L.themes[clamp(Math.floor(x/segLen), 0, L.themes.length-1)];
   L.themeAt = themeAt;
-  const diff = LV.baby ? 0 : li/8;
+  const diff = LV.baby ? 0 : li/9;
   let x = -400, y = 400, idx = 1;
   const plat = (px, w, py, extra)=>{ const p = Object.assign({x:px, w, y:py, y0:py, s:idx++, th:themeAt(px+w/2)}, extra||{}); L.plats.push(p); return p; };
   const row = (px, py, n, step)=>{ for (let k=0;k<n;k++) L.items.push({x:px+k*step, y:py}); };
@@ -291,14 +296,11 @@ function genLevel(li){
   else if (LV.pow) ch.push({at:LV.length*0.3, pow:LV.pow}, {at:LV.length*0.68, pow:LV.pow});
   else if (LV.baby) ch.push({at:LV.length*0.45, pow:'lego'});
   let ci = 0, nextRand = 1700;
-  const avail = LV.theme==='mix' ? ['shoes','lego','blocks','truck','piano','fly'] : unlockedPows(li);
+  const avail = LV.theme==='mix' ? ALL_POWS : unlockedPows(li);
   L.checkX = null;
-  const gapMax = LV.baby ? 120 : 175;
+  const gapMax = LV.baby ? 130 : 195;
   while (x < LV.length){
     const prog = x / LV.length, th = themeAt(x);
-    if (L.checkX===null && x > LV.length*0.5){
-      x += 100; plat(x, 520, 400); L.checkX = x + 120; row(x+220, 356, 4, 55); x += 520; y = 400; continue;
-    }
     if (ci < ch.length && x > ch[ci].at){
       const pw = ch[ci].pow; ci++;
       x += 100; plat(x, 480, 410); L.pows.push({x:x+150, y:410-70, t:pw}); x += 480; y = 410;
@@ -320,6 +322,12 @@ function genLevel(li){
         for (let k=0;k<6;k++) plat(x+12+k*100, 88, 380 - (k%2)*24, {ghost:'piano', key:k});
         arc(x, x+gap, 340, 40, 8); x += gap;
         plat(x, 420, 400); x += 420; y = 400;
+      } else if (pw==='geo'){
+        x += 80; plat(x, 2800, 410);
+        for (let k=0;k<6;k++){ const sx = x+220+k*420, n = 1 + (k%3); for (let j=0;j<n;j++) L.obst.push(mkObst(sx+j*32, 410, 'spike', r)); arc(sx-70, sx+n*32+70, 380, 90, 3); }
+        x += 2800;
+        for (let k=0;k<4;k++){ x += 80; plat(x, 170, 385 - (k%2)*30, {sq:true}); L.items.push({x:x+85, y:330-(k%2)*30}); x += 170; }
+        x += 90; plat(x, 660, 410); L.obst.push(mkObst(x+300, 410, 'saw', r)); x += 660; y = 410;
       } else if (pw==='fly'){
         const gap = 1000;
         for (let k=0;k<14;k++){ const tt=(k+1)/15; L.items.push({x:x+gap*tt, y:250-Math.sin(tt*Math.PI*2)*90}); }
@@ -327,7 +335,7 @@ function genLevel(li){
       }
       continue;
     }
-    const gap = R(70, Math.min(gapMax, 105 + 70*prog + 40*diff));
+    const gap = R(80, Math.min(gapMax, 115 + 80*prog + 45*diff));
     const ny = clamp(y + R(LV.baby ? -55 : -75, 100), LV.baby ? 320 : 285, 450);
     const pw = R(300 - 60*diff, 640 - 120*diff);
     arc(x-20, x+gap+20, Math.min(y,ny)-58, 55, 3);
@@ -337,11 +345,12 @@ function genLevel(li){
     plat(x, pw, ny, extra);
     let used = false;
     if (x > nextRand && li > 0){ L.pows.push({x:x+Math.min(150, pw*0.3), y:ny-70, t: r()<0.5 ? 'egg' : pick(avail)}); nextRand = x + R(1500, 2200); used = true; }
-    if (pw > 330 && r() < 0.5 + 0.35*diff){
-      const ox = x + pw*R(0.55, 0.78);
-      L.obst.push(mkObst(ox, ny, pick(THEMES[th].obst), r));
-      L.items.push({x:ox, y:ny-118});
-      if (pw > 520 && r() < 0.35 + 0.4*diff){ const ox2 = x + pw*0.92; if (ox2 - ox > 120) L.obst.push(mkObst(ox2, ny, pick(THEMES[th].obst), r)); }
+    const lim = x + pw - LV.speed*0.9;
+    if (pw > 330 && lim > x + 60 && r() < 0.62 + 0.35*diff){
+      const k1 = pick(THEMES[th].obst), sharp = k1==='spike' || k1==='saw';
+      const ox = sharp ? Math.max(x + pw*R(0.3, 0.6), x + 330) : Math.min(x + pw*R(0.3, 0.6), lim);
+      if (ox <= lim){ L.obst.push(mkObst(ox, ny, k1, r)); L.items.push({x:ox, y:ny-118}); }
+      if (r() < 0.45 + 0.4*diff){ const ox2 = ox + R(400, 450); if (ox2 <= lim) L.obst.push(mkObst(ox2, ny, pick(THEMES[th].obst), r)); }
       if (!used && pw > 420 && r() < 0.35){ const sx = x + pw*0.3; L.springs.push({x:sx, y:ny, t:-9}); arc(sx-10, sx+260, ny-130, 120, 5); }
     } else if (!used){
       if (r() < 0.3 && pw > 360){ const sx = x + pw*0.4; L.springs.push({x:sx, y:ny, t:-9}); arc(sx-10, sx+260, ny-130, 120, 5); }
@@ -363,6 +372,7 @@ function mkObst(x, y, t, r){
   if (t==='weed') o.roll = true;
   if (t==='duck' || t==='duckie') o.walk = 40;
   if (t==='knight') o.hop = true;
+  if (t==='spike' || t==='saw') o.sharp = true;
   return o;
 }
 const GREETS = ['Ciao!','Hi!','مرحبا!','Hola!','Bonjour!','Namaste!','Ni hao!','Salam!','Olá!','Hallo!'];
@@ -415,21 +425,21 @@ const DECOR = genDecor();
 let L = null, R = null, state = 'attract', camX = 0, t = 0, levelT = 0, doneT = 0, oopsT = 0;
 let count = 0, combo = 0, comboT = 0, pianoIdx = 0, parts = [], bubbles = [], pops = [], banner = null, shake = 0, flash = 0, lastStyle = 'n';
 let P, pow, pet, hearts = 3, cpCount = 0, cpReached = false, holding = false, curLi = 0, rotateSeen = false;
-let progress = Object.assign({unlocked:0, stars:[0,0,0,0,0,0,0,0,0]}, store.get('corri3-progress', {}));
+let progress = Object.assign({unlocked:0, stars:[0,0,0,0,0,0,0,0,0,0]}, store.get('corri3-progress', {}));
 function freshPlayer(x, y){ return {x, y, vy:0, sp:0, ground:true, on:null, coyote:0, buf:0, jumps:0, spin:0, inv:0, balloon:false, lastGY:y, anim:0, sq:1, holdT:0}; }
 function startLevel(li, attract){
   curLi = li; R = null;
   if (LEVELS[li].type==='race'){ L = genLevel(4); state = 'intro'; return; }
   L = genLevel(li);
   P = freshPlayer(0, 400); P.sp = attract ? LEVELS[li].speed : 0;
-  pow = {shoes:0, lego:0, blocks:0, truck:0, piano:0, fly:0};
+  pow = {shoes:0, lego:0, blocks:0, truck:0, piano:0, fly:0, geo:0};
   pet = {x:-60, y:400, vy:0, hop:0};
   count = 0; combo = 0; pianoIdx = 0; parts = []; bubbles = []; pops = []; banner = null; levelT = 0; doneT = 0; flash = 0; lastStyle = 'n';
   hearts = 3; cpCount = 0; cpReached = false; holding = false;
   camX = P.x - VW*0.3;
   state = attract ? 'attract' : 'intro';
 }
-const curStyle = ()=> !pow ? 'n' : pow.blocks > 0 ? 'mc' : pow.lego > 0 ? 'lego' : 'n';
+const curStyle = ()=> !pow ? 'n' : pow.geo > 0 ? 'geo' : pow.blocks > 0 ? 'mc' : pow.lego > 0 ? 'lego' : 'n';
 
 // ---------- audio ----------
 let AC = null, master = null, sfxGain = null, musGain = null;
@@ -499,6 +509,7 @@ const SONGS = {
   race:   {bpm:168, root:62, scale:[0,2,4,5,7,9,11], prog:[0,4,5,4], seed:23},
   lake:   {bpm:100, root:65, scale:[0,2,4,5,7,9,11], prog:[0,5,3,4], seed:9},
   chess:  {bpm:116, root:60, scale:[0,2,3,5,7,8,11], prog:[0,5,4,0], seed:13},
+  geo:    {bpm:150, root:57, scale:[0,2,3,5,7,8,10], prog:[0,5,3,6], seed:41},
   mix:    {bpm:140, root:60, scale:[0,2,4,5,7,9,11], prog:[0,4,5,3], seed:17}
 };
 function buildSong(sg){
@@ -578,7 +589,7 @@ function doJump(){
   const truck = pow.truck > 0, baby = LEVELS[curLi].baby;
   if (pow.fly > 0 && !P.ground) return true;
   if (P.ground || P.coyote > 0){
-    P.vy = truck ? -800 : baby ? -780 : -840; P.ground = false; P.on = null; P.coyote = 0; P.jumps = pow.shoes>0 ? 1 : 0; P.holdT = 0; P.sq = 1.25;
+    P.vy = truck ? -800 : pow.geo > 0 ? -880 : baby ? -780 : -840; P.ground = false; P.on = null; P.coyote = 0; P.jumps = pow.shoes>0 ? 1 : 0; P.holdT = 0; P.sq = 1.25;
     sfx.jump(); if (pow.piano>0) pianoKey(FRA[pianoIdx++%FRA.length]);
     dust(P.x, P.y, 5); return true;
   }
@@ -630,7 +641,7 @@ function update(dt){
   if (state==='intro' || state==='paused' || state==='stable') return;
   if (state==='oops'){ oopsT += dt; updateParts(dt); if (oopsT > 1.7) respawnFromCheckpoint(); return; }
   levelT += dt;
-  for (const k in pow){ const before = pow[k]; pow[k] = Math.max(0, pow[k]-dt); if (before>0 && pow[k]===0 && k==='truck') dust(P.x,P.y,12); }
+  for (const k in pow){ const before = pow[k]; pow[k] = Math.max(k==='truck' && before > 0 && !P.ground ? 0.01 : 0, pow[k]-dt); if (k==='fly' && before > 0 && pow[k]===0 && !P.ground) P.balloon = true; if (before>0 && pow[k]===0 && k==='truck') dust(P.x,P.y,12); }
   const st = curStyle();
   if (st !== lastStyle){ flash = 0.35; lastStyle = st; if (state!=='attract') sfx.poof(); burst(P.x, P.y-30, 24, 300, st==='mc' ? ['#6dbb3c','#8f5d36','#7a7a7a'] : st==='lego' ? ['#e3000b','#0055bf','#ffd500','#00852b'] : ['#fff','#ffd23f']); }
   flash = Math.max(0, flash - dt);
@@ -640,7 +651,7 @@ function update(dt){
   comboT -= dt; if (comboT <= 0) combo = 0;
   shake = Math.max(0, shake - dt*30);
   const LV = LEVELS[curLi], truck = pow.truck > 0, fly = pow.fly > 0;
-  let target = LV.speed * (truck ? 1.12 : 1);
+  let target = LV.speed * (truck ? 1.12 : pow.geo > 0 ? 1.15 : 1);
   if (state==='done') target = P.x > L.fin.x + L.fin.w - 450 ? 0 : LV.speed*0.8;
   P.sp += (target - P.sp) * Math.min(1, dt*(target < P.sp ? 6 : 2.2));
   const sp = P.sp;
@@ -653,6 +664,7 @@ function update(dt){
     } else if (P.vy > 0) holding = false;
     if (fly) holding = P.y > 300;
   }
+  if (pow.geo > 0 && holding && P.ground && state!=='attract') P.buf = Math.max(P.buf, 0.05);
   if (P.buf > 0){ if (doJump()) P.buf = 0; else P.buf -= dt; }
 
   const hw = truck ? 34 : 10, ph = truck ? 72 : (LV.baby ? 40 : 60);
@@ -683,6 +695,7 @@ function update(dt){
     let g;
     if (fly){ if (holding){ P.vy -= 2700*dt; if (P.vy < -430) P.vy = -430; g = 0; } else g = 1000; }
     else if (P.balloon) g = 500;
+    else if (pow.geo > 0) g = 2900;
     else if (P.vy < 0){ P.holdT += dt; g = (holding && P.holdT < 0.28) ? 1500 : 4200; }
     else g = 2700;
     P.vy += g*dt;
@@ -706,15 +719,20 @@ function update(dt){
       P.ground = true; P.on = land; P.vy = 0; P.lastGY = ny; P.jumps = pow.shoes>0 ? 1 : 0;
     }
     P.y = ny;
+    if (pow.geo > 0 && !P.ground) P.geoRot = (P.geoRot||0) + dt*5.4;
   }
+  if (P.ground && P.geoRot) P.geoRot = Math.round(P.geoRot/(Math.PI/2))*(Math.PI/2);
   const inLake = L.themeAt(P.x)==='lake', limit = inLake ? 480 : 640;
+  if (P.y > limit && state==='play'){
+    if (inLake) for (let i=0;i<14;i++) parts.push({x:P.x, y:478, vx:(Math.random()-0.5)*300, vy:-Math.random()*500, life:0.8, max:0.8, c:'#bfe6ff', sz:5, k:'chunk'});
+    state = 'oops'; oopsT = 0; sfx.oops(); say('ouch'); shake = 8; return;
+  }
   if (P.y > limit){
     if (inLake) for (let i=0;i<14;i++) parts.push({x:P.x, y:478, vx:(Math.random()-0.5)*300, vy:-Math.random()*500, life:0.8, max:0.8, c:'#bfe6ff', sz:5, k:'chunk'});
     const p = L.plats.find(p=>!p.brick && !p.ghost && p.x+p.w > P.x+90);
     if (p && p.x > P.x) P.x = p.x + 30;
     P.y = (p ? p.y : 400) - 340; P.vy = 0; P.balloon = true; P.ground = false; P.on = null;
-    sfx.balloon(); if (state==='play') hurt();
-    if (state==='oops') return;
+    sfx.balloon();
   }
   for (const o of L.obst){
     if (o.hit){ o.x += o.vx*dt; o.dy += o.vy*dt; o.vy += 1800*dt; o.rot += dt*9; continue; }
@@ -726,7 +744,7 @@ function update(dt){
     if (Math.abs(ox - P.x) < hw+14 && P.y > oy-34 && P.y-ph+8 < oy){
       if (truck) smashObst(o, ox, oy, 'n');
       else if (pow.blocks>0) smashObst(o, ox, oy, 'mc');
-      else if (P.vy > 150 && P.y < oy-14 && o.t!=='knight'){
+      else if (P.vy > 150 && P.y < oy-14 && o.t!=='knight' && !o.sharp){
         P.vy = -620; P.ground = false; P.on = null; o.hit = true; o.vx = 200; o.vy = -300; sfx.jump2(); count++; burst(ox, oy-20, 8, 160);
       } else if (state==='attract'){ o.hit = true; o.vx = 260; o.vy = -520; }
       else if (P.inv <= 0){ o.hit = true; o.vx = 260; o.vy = -520; hurt(); }
@@ -762,7 +780,7 @@ function update(dt){
     if (Math.hypot(pw.x-cx, pw.y-cy) < rad+22){
       pw.taken = true;
       let k = pw.t;
-      if (k==='egg'){ const opts = (LEVELS[curLi].theme==='mix') ? ['shoes','lego','blocks','truck','piano','fly'] : unlockedPows(curLi); k = opts[Math.floor(Math.random()*opts.length)]; cubes(pw.x, pw.y, 10, ['#fff','#ffd23f','#ff5fa2']); }
+      if (k==='egg'){ const opts = (LEVELS[curLi].theme==='mix') ? ALL_POWS : unlockedPows(curLi); k = opts[Math.floor(Math.random()*opts.length)]; cubes(pw.x, pw.y, 10, ['#fff','#ffd23f','#ff5fa2']); }
       pow[k] = POWERS[k].dur; banner = {t:k, time:0};
       sfx.power(); if (k==='truck') sfx.vroom();
       if (!say('power')) pop(POWERS[k].name.split(' ')[0] + '!', '#fff');
@@ -777,7 +795,6 @@ function update(dt){
   P.anim += sp*dt*(LV.baby ? 0.07 : 0.05);
   camX += ((P.x - VW*0.3) - camX) * Math.min(1, dt*6);
 
-  if (state==='play' && !cpReached && P.x >= L.checkX){ cpReached = true; cpCount = count; sfx.check(); burst(L.checkX, 300, 16, 220); pop('Bandierina!', '#22b8a7'); }
   if (state==='play' && P.x >= L.finishX) finishLevel();
   if (state==='attract' && P.x > L.finishX - 100){ const order = [0,1,3,4,6,7]; startLevel(order[(order.indexOf(curLi)+1) % order.length], true); }
   if (state==='done'){
@@ -787,7 +804,7 @@ function update(dt){
   }
   updateParts(dt);
   if (banner){ banner.time += dt; if (banner.time > 1.3) banner = null; }
-  mSong = state==='attract' ? 'menu' : (LEVELS[curLi].theme==='mix' ? 'mix' : L.themes[0]);
+  mSong = state==='attract' ? 'menu' : pow.geo > 0 ? 'geo' : (LEVELS[curLi].theme==='mix' ? 'mix' : L.themes[0]);
 }
 function confetti(){ parts.push({x:camX+Math.random()*VW, y:-10, vx:(Math.random()-0.5)*60, vy:120+Math.random()*120, life:3.5, max:3.5, c:['#ffd23f','#ff6b4a','#22b8a7','#fff','#8f6bff'][Math.floor(Math.random()*5)], sz:7, k:'conf', r:Math.random()*6}); }
 function addBlock(){
@@ -824,7 +841,7 @@ function startRace(si){
   for (let i=0;i<6;i++){ const h = {st:i, lane:i, x:0, v:0, anim:Math.random()*6, boost:0, place:0, base:bases[i], me:i===si}; R.horses.push(h); if (h.me) R.me = h; }
   for (let k=1;k<9;k++) R.shoes.push({x:k*650+Math.random()*120, taken:false});
   camX = -VW*0.35; parts = []; pops = []; doneT = 0; holding = false;
-  pow = {shoes:0, lego:0, blocks:0, truck:0, piano:0, fly:0};
+  pow = {shoes:0, lego:0, blocks:0, truck:0, piano:0, fly:0, geo:0};
   state = 'race'; mSong = 'race'; lastCd = 4;
 }
 let lastCd = 4;
@@ -1013,6 +1030,7 @@ function drawItemT(kind, x, y, s, spin){
   else if (kind==='gem'){ ctx.beginPath(); ctx.moveTo(-14,-5); ctx.lineTo(-7,-14); ctx.lineTo(7,-14); ctx.lineTo(14,-5); ctx.lineTo(0,15); ctx.closePath(); ctx.fillStyle='#3ad1ff'; ctx.fill(); ctx.lineWidth=2; ctx.strokeStyle='#127aa8'; ctx.stroke(); ctx.beginPath(); ctx.moveTo(-14,-5); ctx.lineTo(14,-5); ctx.moveTo(-5,-5); ctx.lineTo(0,15); ctx.lineTo(5,-5); ctx.stroke(); }
   else if (kind==='crown'){ ctx.beginPath(); ctx.moveTo(-15,10); ctx.lineTo(-15,-8); ctx.lineTo(-8,0); ctx.lineTo(0,-13); ctx.lineTo(8,0); ctx.lineTo(15,-8); ctx.lineTo(15,10); ctx.closePath(); ctx.fillStyle='#ffd23f'; ctx.fill(); ctx.lineWidth=2.5; ctx.strokeStyle='#d18400'; ctx.stroke(); ctx.fillStyle='#ff4d6d'; circle(0,3,3); ctx.fill(); ctx.fillStyle='#3a86ff'; circle(-8,5,2.4); ctx.fill(); circle(8,5,2.4); ctx.fill(); }
   else if (kind==='paci'){ ctx.fillStyle='#8fd3ff'; ctx.beginPath(); ctx.ellipse(0,0,14,10,0,0,Math.PI*2); ctx.fill(); ctx.strokeStyle='#ff7eb6'; ctx.lineWidth=4; circle(0,-11,7); ctx.stroke(); ctx.fillStyle='#ffe0a0'; ctx.beginPath(); ctx.ellipse(0,9,6,7,0,0,Math.PI*2); ctx.fill(); ctx.fillStyle='rgba(255,255,255,.6)'; ctx.beginPath(); ctx.ellipse(-5,-3,4,2.5,-0.4,0,Math.PI*2); ctx.fill(); }
+  else if (kind==='orb'){ circle(0,0,14); ctx.fillStyle='#ffd23f'; ctx.fill(); ctx.lineWidth=3; ctx.strokeStyle='#fff'; ctx.stroke(); circle(0,0,7); ctx.fillStyle='#ff9f1c'; ctx.fill(); ctx.fillStyle='rgba(255,255,255,.7)'; circle(-5,-5,3); ctx.fill(); }
   else if (kind==='stud'){ ctx.fillStyle='#e6b800'; rr(-12,-4,24,14,4); ctx.fill(); ctx.fillStyle='#ffd500'; ctx.beginPath(); ctx.ellipse(0,-4,12,6,0,0,Math.PI*2); ctx.fill(); ctx.fillStyle='rgba(255,255,255,.55)'; ctx.beginPath(); ctx.ellipse(-4,-6,4,2,0,0,Math.PI*2); ctx.fill(); }
   ctx.restore();
 }
@@ -1045,7 +1063,19 @@ function iconEgg(){
   [['#ff5fa2',-6,-6],['#3a86ff',6,-2],['#22b8a7',-3,8],['#ffbe0b',7,9]].forEach(([c,x,y])=>{ ctx.fillStyle=c; circle(x,y,3.5); ctx.fill(); });
   ctx.fillStyle='#8f6bff'; ctx.font='800 16px '+FONT; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('?',0,1);
 }
-const ICONS = {shoes:iconShoes, truck:iconTruck, piano:iconPiano, blocks:iconBlocks, lego:iconLego, fly:iconFly, egg:iconEgg};
+function iconGeo(){
+  ctx.save(); ctx.rotate(0.25); geoCube(0,0,26,'#3ad1ff'); ctx.restore();
+  ctx.fillStyle='#ffd23f'; ctx.beginPath(); ctx.moveTo(10,20); ctx.lineTo(18,6); ctx.lineTo(26,20); ctx.closePath(); ctx.fill();
+}
+function geoCube(cx, cy, sz, col){
+  const h = sz/2;
+  ctx.fillStyle = col; ctx.fillRect(cx-h, cy-h, sz, sz);
+  ctx.lineWidth = Math.max(2, sz/12); ctx.strokeStyle = '#fff'; ctx.strokeRect(cx-h, cy-h, sz, sz);
+  ctx.fillStyle = shade(col, 50); ctx.fillRect(cx-h*0.55, cy-h*0.55, sz*0.55, sz*0.55);
+  ctx.fillStyle = '#1d1640'; ctx.fillRect(cx-h*0.45, cy-h*0.35, sz*0.16, sz*0.2); ctx.fillRect(cx+h*0.12, cy-h*0.35, sz*0.16, sz*0.2);
+  ctx.fillRect(cx-h*0.4, cy+h*0.25, sz*0.4, sz*0.1);
+}
+const ICONS = {geo:iconGeo, shoes:iconShoes, truck:iconTruck, piano:iconPiano, blocks:iconBlocks, lego:iconLego, fly:iconFly, egg:iconEgg};
 function drawIcon(k,x,y,s){ ctx.save(); ctx.translate(x,y); ctx.scale(s,s); ICONS[k](); ctx.restore(); }
 function legoBrick(x, y, w, h, col, studs){
   ctx.fillStyle = col; rr(x, y, w, h, 2); ctx.fill();
@@ -1283,9 +1313,13 @@ function drawBaby(A, o){
 }
 function drawCharacter(A, o){
   const st = o.style || 'n';
-  if (o.baby) return drawBaby(A, o);
+  if (o.baby && st!=='geo') return drawBaby(A, o);
   if (st==='mc') return drawFigMC(A, o);
   if (st==='lego') return drawFigLego(A, o);
+  if (st==='geo'){
+    ctx.save(); if (o.inv && Math.floor(t*16)%2) ctx.globalAlpha *= 0.45;
+    ctx.translate(0, -21); ctx.rotate(o.geoRot || 0); geoCube(0, 0, 40, COLORS[A.color]); ctx.restore(); return;
+  }
   drawFig(A, o);
 }
 function drawPet(id, x, y, s, a){
@@ -1484,6 +1518,22 @@ const BG = {
     ctx.fillStyle='#fff'; ctx.beginPath(); ctx.moveTo(bx,372); ctx.lineTo(bx+40,372); ctx.lineTo(bx+32,382); ctx.lineTo(bx+8,382); ctx.fill();
     ctx.beginPath(); ctx.moveTo(bx+20,370); ctx.lineTo(bx+20,335); ctx.lineTo(bx+38,368); ctx.fill();
   },
+  geo(){
+    const off = camX*0.15;
+    ctx.strokeStyle='rgba(120,200,255,.12)'; ctx.lineWidth=2;
+    for (let i=-1;i<VW/60+2;i++){ const x = i*60 - (off%60); ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,VH); ctx.stroke(); }
+    for (let j=0;j<VH/60+1;j++){ ctx.beginPath(); ctx.moveTo(0,j*60); ctx.lineTo(VW,j*60); ctx.stroke(); }
+    const off2 = camX*0.3, beat = 1 + 0.08*Math.max(0, Math.sin(t*Math.PI*2.5));
+    for (let k = Math.floor(off2/260)-1; k < Math.floor((off2+VW)/260)+2; k++){
+      const x = k*260 - off2 + 130, y = 160 + hash(k*13)*180, sz = (40 + hash(k*7)*70)*beat, hue = (k*67)%360;
+      ctx.save(); ctx.translate(x, y); ctx.rotate(t*0.6*(k%2?1:-1) + k);
+      ctx.strokeStyle = 'hsla('+hue+',90%,65%,.45)'; ctx.lineWidth = 4;
+      if (k%3===0){ ctx.strokeRect(-sz/2,-sz/2,sz,sz); }
+      else if (k%3===1){ ctx.beginPath(); ctx.moveTo(0,-sz/2); ctx.lineTo(sz/2,sz/2); ctx.lineTo(-sz/2,sz/2); ctx.closePath(); ctx.stroke(); }
+      else { circle(0,0,sz/2); ctx.stroke(); }
+      ctx.restore();
+    }
+  },
   chess(){
     for (let i=0;i<40;i++){ const sx = ((hash(i*7)*VW*2 - camX*0.02)%VW+VW)%VW, sy = hash(i*13)*300; ctx.fillStyle='rgba(255,255,255,'+(0.4+0.5*Math.abs(Math.sin(t*2+i))).toFixed(2)+')'; circle(sx, sy, 1.6); ctx.fill(); }
     circle(VW*0.8, 90, 38); ctx.fillStyle='#fff6d8'; ctx.fill(); circle(VW*0.8+14, 82, 32); ctx.fillStyle='#3b2a7a'; ctx.fill();
@@ -1579,6 +1629,18 @@ const PLAT = {
     ctx.fillStyle='rgba(255,255,255,.3)'; ctx.fillRect(sx, p.y, p.w, 2);
   }
 };
+function platGeo(p, sx){
+  const hue = (p.s*47)%360, col = 'hsl('+hue+',90%,60%)';
+  const H = p.sq ? 110 : VH-p.y+4, B = p.y + H;
+  ctx.fillStyle='#120a3a'; ctx.fillRect(sx, p.y, p.w, H);
+  ctx.strokeStyle='rgba(255,255,255,.08)'; ctx.lineWidth=2;
+  for (let gx = 40; gx < p.w; gx += 40){ const X = sx+gx; if (X < -2 || X > VW+2) continue; ctx.beginPath(); ctx.moveTo(X, p.y); ctx.lineTo(X, B); ctx.stroke(); }
+  for (let gy = p.y+40; gy < B; gy += 40){ ctx.beginPath(); ctx.moveTo(Math.max(sx,-2), gy); ctx.lineTo(Math.min(sx+p.w, VW+2), gy); ctx.stroke(); }
+  ctx.save(); ctx.shadowColor = col; ctx.shadowBlur = 12; ctx.strokeStyle = col; ctx.lineWidth = 4;
+  ctx.strokeRect(sx+2, p.y+2, p.w-4, p.sq ? 110 : VH);
+  ctx.restore();
+  if (p.sq){ ctx.fillStyle = col; ctx.globalAlpha = 0.35; ctx.fillRect(sx+12, p.y+12, p.w-24, 86); ctx.globalAlpha = 1; }
+}
 function drawPlatform(p, st){
   const sx = p.x - camX; if (sx > VW+20 || sx + p.w < -20) return;
   if (p.brick){
@@ -1596,8 +1658,10 @@ function drawPlatform(p, st){
     if (!on){ ctx.setLineDash([6,6]); ctx.strokeStyle='#fff'; ctx.strokeRect(sx, p.y, p.w, 26); ctx.setLineDash([]); }
     ctx.restore(); return;
   }
+  if (st==='geo' || p.th==='geo') return platGeo(p, sx);
   if (st==='mc') return platMC(p, sx);
   if (st==='lego') return platLego(p, sx);
+  if (p.sq){ ctx.fillStyle = '#120a3a'; ctx.fillRect(sx, p.y, p.w, 110); return; }
   PLAT[p.th](p, sx);
 }
 
@@ -1606,6 +1670,7 @@ function drawObst(o, st){
   const sx = o.x + o.mx - camX, by = o.y + o.my + o.dy;
   if (sx < -60 || sx > VW+60 || by > VH+80) return;
   ctx.save(); ctx.translate(sx, by-20); ctx.rotate(o.rot); ctx.translate(0, 20);
+  if (o.sharp || st==='geo'){ drawSharp(o.t==='saw' || (!o.sharp && hash(Math.round(o.home)) > 0.6) ? 'saw' : 'spike'); ctx.restore(); return; }
   if (st==='lego'){ const col = LEGO_COLS[Math.floor(hash(Math.round(o.home))*LEGO_COLS.length)]; legoBrick(-18,-30,36,30,col,2); face(0,-15,0.8, col==='#f4f4f4' || col==='#ffd500' ? '#2a1d3a' : '#fff'); ctx.restore(); return; }
   if (st==='mc'){ ctx.imageSmoothingEnabled = false; const m = o.t==='rock'||o.t==='rook'||o.t==='ac' ? 'cobble' : o.t==='pawn'||o.t==='knight' ? 'quartz' : 'plank'; ctx.drawImage(tile(m, 2), -18,-36,36,36); ctx.fillStyle='#1d1640'; ctx.fillRect(-9,-24,6,6); ctx.fillRect(3,-24,6,6); ctx.fillRect(-6,-14,12,4); ctx.restore(); return; }
   switch (o.t){
@@ -1630,20 +1695,24 @@ function drawObst(o, st){
   }
   ctx.restore();
 }
+function drawSharp(k){
+  if (k==='saw'){
+    ctx.save(); ctx.translate(0,-20); ctx.rotate(t*8);
+    ctx.beginPath(); for (let i=0;i<16;i++){ const a = i/16*Math.PI*2, r = i%2 ? 15 : 22; ctx.lineTo(Math.cos(a)*r, Math.sin(a)*r); } ctx.closePath();
+    ctx.fillStyle='#c9d0da'; ctx.fill(); ctx.lineWidth=2.5; ctx.strokeStyle='#ff4d6d'; ctx.stroke();
+    circle(0,0,6); ctx.fillStyle='#ff4d6d'; ctx.fill(); ctx.restore();
+    return;
+  }
+  ctx.beginPath(); ctx.moveTo(-15,0); ctx.lineTo(0,-32); ctx.lineTo(15,0); ctx.closePath();
+  ctx.fillStyle='#120c2a'; ctx.fill(); ctx.lineWidth=3; ctx.strokeStyle='#ff4d6d'; ctx.lineJoin='round'; ctx.stroke();
+  ctx.fillStyle='rgba(255,77,109,.35)'; ctx.beginPath(); ctx.moveTo(-6,-4); ctx.lineTo(0,-18); ctx.lineTo(6,-4); ctx.closePath(); ctx.fill();
+}
 function drawSpring(s){
   const sx = s.x - camX; if (sx < -40 || sx > VW+40) return;
   const k = Math.max(0, 1 - (t - s.t)*5), squish = k*8;
   ctx.fillStyle='#555'; rr(sx-20, s.y-6, 40, 6, 2); ctx.fill();
   ctx.strokeStyle='#bbb'; ctx.lineWidth=3; ctx.beginPath(); for (let i=0;i<5;i++){ ctx.lineTo(sx + (i%2? 12 : -12), s.y - 6 - i*(4 - squish/5)); } ctx.stroke();
   ctx.fillStyle='#ff4d6d'; rr(sx-22, s.y - 26 + squish, 44, 8, 4); ctx.fill(); ctx.fillStyle='rgba(255,255,255,.5)'; ctx.fillRect(sx-18, s.y-25+squish, 36, 2);
-}
-function drawCheckFlag(){
-  const sx = L.checkX - camX; if (sx < -60 || sx > VW+60) return;
-  const p = platUnder(L.checkX); if (!p) return;
-  ctx.fillStyle='#fff'; ctx.fillRect(sx-2, p.y-90, 4, 90);
-  const wv = Math.sin(t*6)*3;
-  ctx.fillStyle = cpReached ? '#22b8a7' : '#ff6b4a'; ctx.beginPath(); ctx.moveTo(sx+2, p.y-90); ctx.lineTo(sx+40, p.y-80+wv); ctx.lineTo(sx+2, p.y-66); ctx.fill();
-  if (cpReached) drawItemT('star', sx+16, p.y-80, 0.45, 1);
 }
 function drawFinish(){
   const sx = L.finishX - camX, y = L.fin.y; if (sx < -200 || sx > VW+200) return;
@@ -1668,7 +1737,7 @@ function drawWorld(st){
   for (const p of L.plats) drawPlatform(p, st);
   drawWater();
   for (const s of L.springs) drawSpring(s);
-  drawCheckFlag(); drawFinish();
+  drawFinish();
   for (const f of L.friends){
     const sx = f.x - camX; if (sx < -40 || sx > VW+40) continue;
     const jump = f.done ? (f.t < 1.5 ? Math.max(0, Math.sin(f.t*10))*14 : 0) : Math.abs(Math.sin(t*3+f.x))*3;
@@ -1689,7 +1758,7 @@ function drawWorld(st){
   if (pet && AV.pet && state!=='thumb'){ const id = PETS[AV.pet].id; drawPet(id, pet.x - camX, pet.y, 0.9, t*10); }
   const px = P.x - camX;
   if (pow.truck>0) drawTruck(px, P.y);
-  else { ctx.save(); ctx.translate(px, P.y); drawCharacter(AV, {me:true, run:P.anim, air:!P.ground, spin:P.spin, inv:P.inv>0, balloon:P.balloon, fly:pow.fly>0 && !P.ground, sq:P.sq, style:st, baby:LEVELS[curLi].baby}); ctx.restore(); }
+  else { ctx.save(); ctx.translate(px, P.y); drawCharacter(AV, {me:true, run:P.anim, air:!P.ground, spin:P.spin, inv:P.inv>0, balloon:P.balloon, fly:pow.fly>0 && !P.ground, sq:P.sq, style:st, baby:LEVELS[curLi].baby && st!=='geo', geoRot:P.geoRot}); ctx.restore(); }
   if (st!=='mc') drawNameTag();
   for (const b of bubbles){
     const sx = b.x - camX; ctx.globalAlpha = Math.min(1, b.life*2);
@@ -1744,7 +1813,7 @@ function drawHUD(){
   drawItemT('star', 158, 42, 0.95, 1);
   ctx.fillStyle='#fff'; ctx.font='800 32px '+FONT; ctx.textAlign='left'; ctx.textBaseline='middle'; ctx.fillText(String(count), 180, 45);
   let px = 40;
-  for (const k of ['shoes','lego','blocks','truck','piano','fly']){
+  for (const k of ALL_POWS){
     if (pow[k] <= 0) continue;
     circle(px, 106, 25); ctx.fillStyle='rgba(20,12,50,.5)'; ctx.fill();
     ctx.beginPath(); ctx.arc(px, 106, 25, -Math.PI/2, -Math.PI/2 + Math.PI*2*(pow[k]/POWERS[k].dur)); ctx.strokeStyle = pow[k] < 2.5 && Math.floor(t*6)%2 ? '#ff6b4a' : '#ffd23f'; ctx.lineWidth=5; ctx.stroke();
@@ -1754,7 +1823,6 @@ function drawHUD(){
   ctx.fillStyle='rgba(20,12,50,.45)'; rr(bx-6, by-6, bw+12, 24, 12); ctx.fill();
   const frac = clamp(P.x / L.finishX, 0, 1);
   ctx.fillStyle='#ff6b4a'; rr(bx, by, Math.max(12, bw*frac), 12, 6); ctx.fill();
-  const cpx = bx + bw*(L.checkX/L.finishX); ctx.fillStyle = cpReached ? '#22b8a7' : '#fff'; ctx.fillRect(cpx-1, by-6, 3, 24); ctx.beginPath(); ctx.moveTo(cpx+2, by-6); ctx.lineTo(cpx+12, by-2); ctx.lineTo(cpx+2, by+2); ctx.fill();
   for (let i=0;i<3;i++) for (let j=0;j<2;j++){ ctx.fillStyle=(i+j)%2?'#1d1640':'#fff'; ctx.fillRect(bx+bw+10+i*6, by-8+j*6, 6, 6); }
   ctx.fillStyle='#fff'; ctx.fillRect(bx+bw+8, by-8, 2, 28);
   const hx = bx + bw*frac; circle(hx, by+6, 13); ctx.fillStyle=SKINS[AV.skin]; ctx.fill(); ctx.lineWidth=3; ctx.strokeStyle='#fff'; ctx.stroke();
@@ -1781,7 +1849,7 @@ function drawHUD(){
   if (state==='oops'){
     ctx.fillStyle='rgba(29,22,64,'+Math.min(0.6, oopsT).toFixed(2)+')'; ctx.fillRect(-10,-10,VW+20,VH+20);
     ctx.fillStyle='#ffc23d'; ctx.font='800 64px '+FONT; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('Oops!', VW/2, 240);
-    ctx.fillStyle='#fff'; ctx.font='600 26px '+FONT; ctx.fillText(cpReached ? 'Riparti dalla bandierina' : 'Riproviamo!', VW/2, 300);
+    ctx.fillStyle='#fff'; ctx.font='600 26px '+FONT; ctx.fillText('Ricomincia il livello!', VW/2, 300);
   }
 }
 function skyGrad(th, alpha, rs){
@@ -1809,7 +1877,8 @@ function draw(){
   }
   const center = camX + VW*0.5, segLen = L.segLen;
   let thA = L.themeAt(center), thB = null, mixA = 0;
-  if (L.themes.length > 1){
+  if (st==='geo') thA = 'geo';
+  else if (L.themes.length > 1){
     const idx = clamp(Math.floor(center/segLen), 0, L.themes.length-1), into = center - idx*segLen;
     if (into > segLen - 500 && idx < L.themes.length-1){ thB = L.themes[idx+1]; mixA = (into - (segLen-500))/500; }
   }
@@ -1853,8 +1922,8 @@ function thumb(c, li){
       return;
     }
     curLi = li; L = genLevel(li); R = null; pet = null;
-    camX = li===8 ? L.segLen*2.4 : 1250;
-    P = freshPlayer(camX+VW*0.3, 400); pow = {shoes:0, lego:0, blocks:0, truck:0, piano:0, fly:0};
+    camX = LEVELS[li].theme==='mix' ? L.segLen*2.4 : 1250;
+    P = freshPlayer(camX+VW*0.3, 400); pow = {shoes:0, lego:0, blocks:0, truck:0, piano:0, fly:0, geo:0};
     const pl = platUnder(P.x); P.y = pl ? pl.y : 400; P.anim = 1;
     ctx.setTransform(1,0,0,1,0,0);
     const thC = L.themeAt(camX+VW/2), sky = THEMES[thC].sky, g = ctx.createLinearGradient(0,0,0,c.height);
@@ -2020,6 +2089,7 @@ function swRow(list, key, label){
 function optRow(list, key, cat, paint){
   const row = document.createElement('div'); row.className = 'optrow';
   list.forEach((it, i)=>{
+    if (it.hidden) return;
     const b = document.createElement('button'); b.className = 'ob' + (AV[key]===i ? ' on' : '');
     const c = document.createElement('canvas'); c.width = 128; c.height = 128; b.appendChild(c);
     withCtx(c, ()=>{ ctx.setTransform(1,0,0,1,0,0); ctx.clearRect(0,0,128,128); paint(i); });
