@@ -173,6 +173,7 @@ h2 .en{font-size:.72em}
 <div id="intro" class="overlay dim" hidden>
   <div class="sub" id="introNum">Livello 1</div>
   <div class="big" id="introName">Abu Dhabi</div>
+  <div class="sub" id="introGoals"></div>
   <div class="power">
     <canvas id="powIcon" width="110" height="110"></canvas>
     <div class="t"><h2 id="powTitle">Nuovo potere!</h2><div class="sub" id="powHint"></div></div>
@@ -212,6 +213,7 @@ h2 .en{font-size:.72em}
     <svg viewBox="0 0 50 48"><path d="M25 3l6.5 14 15 1.6-11.3 10 3.3 15L25 36l-13.5 7.6 3.3-15L3.5 18.6l15-1.6z" stroke-linejoin="round"/></svg>
   </div>
   <div class="score" id="scoreLine">★ 0</div>
+  <div class="sub" id="goalLine"></div>
   <div class="row">
     <button class="btn" id="dMap" aria-label="Livelli"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/></svg></button>
     <button class="btn" id="dAgain" aria-label="Rigioca"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M20 12a8 8 0 1 1-2.3-5.7"/><path d="M20 3v5h-5" stroke-linejoin="round"/></svg></button>
@@ -247,9 +249,9 @@ const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
 const SKINS = ['#f7d7bd','#e8b88a','#c68a5c','#a86b43','#7a4a2c'];
 const HAIRC = ['#3b2416','#17171c','#a0522d','#e2b64e','#ff7eb6','#3a86ff'];
 const COLORS = ['#ff6b4a','#3a86ff','#22b8a7','#ffbe0b','#8f6bff','#ff5fa2','#2b2d42','#f4f4f4'];
-const OUTFITS = [{id:'tee',cost:0},{id:'soccer',cost:0},{id:'hero',cost:40},{id:'pirate',cost:60},{id:'astro',cost:80},{id:'dino',cost:100}];
-const HATS = [{id:'none',cost:0},{id:'cap',cost:0},{id:'glasses',cost:0},{id:'phones',cost:30},{id:'sun',cost:20},{id:'crown',cost:60}];
-const PETS = [{id:'none',cost:0},{id:'dog',cost:0,hidden:true},{id:'cat',cost:0},{id:'falcon',cost:40},{id:'camel',cost:60},{id:'pony',cost:60},{id:'dino',cost:90}];
+const OUTFITS = [{id:'tee',cost:0},{id:'soccer',cost:0},{id:'hero',cost:250},{id:'pirate',cost:400},{id:'astro',cost:600},{id:'dino',cost:900}];
+const HATS = [{id:'none',cost:0},{id:'cap',cost:0},{id:'glasses',cost:0},{id:'phones',cost:200},{id:'sun',cost:150},{id:'crown',cost:500}];
+const PETS = [{id:'none',cost:0},{id:'dog',cost:0,hidden:true},{id:'cat',cost:0},{id:'falcon',cost:300},{id:'camel',cost:450},{id:'pony',cost:450},{id:'dino',cost:800}];
 let AV = Object.assign({kind:0, skin:1, hair:0, hairC:0, outfit:0, color:0, hat:0, pet:0, name:''}, store.get('corri3-avatar', {}));
 if (AV.pet===1) AV.pet = 0;
 let owned = new Set(store.get('corri3-owned', []));
@@ -419,6 +421,7 @@ function genLevel(li){
   L.items.forEach((i, n)=>{ i.taken = false; i.ox = i.x; i.oy = i.y; if (n % 11 === 7) i.big = true; }); L.pows.forEach(p=>p.taken=false);
   if (L.checkX===null) L.checkX = L.finishX*0.5;
   L.totalItems = L.items.length;
+  L.goals = [Math.round(L.totalItems*0.5), Math.round(L.totalItems*0.9), Math.round(L.totalItems*1.3)];
   return L;
 }
 function genGD(L, x, r, R, plat, row, arc){
@@ -524,7 +527,8 @@ let L = null, R = null, state = 'attract', camX = 0, t = 0, levelT = 0, doneT = 
 let count = 0, combo = 0, comboT = 0, pianoIdx = 0, parts = [], bubbles = [], pops = [], banner = null, shake = 0, flash = 0, lastStyle = 'n';
 let countdown = 0, hudBump = 0, fwT = 0;
 let P, pow, pet, hearts = 3, cpCount = 0, cpReached = false, holding = false, curLi = 0, rotateSeen = false;
-let progress = Object.assign({unlocked:0, stars:[0,0,0,0,0,0,0,0,0,0]}, store.get('corri3-progress', {}));
+let progress = Object.assign({unlocked:0, stars:[0,0,0,0,0,0,0,0,0,0], best:[]}, store.get('corri3-progress', {}));
+if (!progress.best) progress.best = [];
 function freshPlayer(x, y){ return {boost:0, slide:0, wallT:0, ship:false, slideQ:false, x, y, vy:0, sp:0, ground:true, on:null, coyote:0, buf:0, jumps:0, spin:0, inv:0, balloon:false, lastGY:y, anim:0, sq:1, holdT:0}; }
 function startLevel(li, attract){
   curLi = li; R = null;
@@ -1111,7 +1115,7 @@ function underRoof(){ return L.haz.some(h=>h.k==='roof' && P.x + 10 >= h.x && P.
 
 // ---------- end-of-level minigames ----------
 const MINI = {
-  city:   {k:'catch', item:'star', bad:'bomb', t:['Prendi le stelle, evita le bombe!', 'Catch the stars, dodge the bombs!']},
+  city:   {k:'catch', item:'star', bad:'rock', t:['Prendi le stelle, evita i sassi!', 'Catch the stars, dodge the rocks!']},
   desert: {k:'catch', item:'gem', bad:'rock', t:['Prendi le gemme, evita i sassi!', 'Catch the gems, dodge the rocks!']},
   school: {k:'whack', good:'kid', bad:'teacher', t:['Tocca i compagni, non la maestra!', 'Tap your friends, not the teacher!']},
   chess:  {k:'whack', good:'pawn', bad:'king', t:['Colpisci i pedoni, non il re!', 'Hit the pawns, not the King!']},
@@ -1119,7 +1123,7 @@ const MINI = {
   town:   {k:'pop', skin:'balloon', t:['Carnevale! Scoppia i palloncini, non quelli neri!', 'Pop the balloons, not the black ones!']},
   lake:   {k:'fish', t:['Pesca i pesci, non le scarpe!', 'Catch the fish, not the boots!']},
   geo:    {k:'rhythm', t:['Tocca quando la forma entra nel cerchio!', 'Tap when the shape hits the ring!']},
-  mix:    {k:'pop', skin:'rocket', t:['Fuochi d\'artificio! Tocca i razzi, non le bombe!', 'Tap the rockets, not the bombs!']}
+  mix:    {k:'pop', skin:'rocket', t:['Fuochi d\'artificio! Tocca i razzi, non i sassi!', 'Tap the rockets, not the rocks!']}
 };
 let M = null;
 function startMini(){
@@ -1214,7 +1218,7 @@ function drawMini(){
   ctx.fillStyle = 'rgba(20,12,50,.35)'; ctx.fillRect(-10, -OY/S - 10, VW + 20, CH/S + 20);
   if (k==='catch'){
     for (const o of M.objs){ if (o.gone) continue;
-      if (o.bad){ if (M.def.bad==='bomb'){ circle(o.x, o.y, 18); ctx.fillStyle = '#1d1640'; ctx.fill(); ctx.strokeStyle = '#ffd23f'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(o.x + 8, o.y - 14); ctx.quadraticCurveTo(o.x + 16, o.y - 30, o.x + 6, o.y - 34); ctx.stroke(); circle(o.x + 6, o.y - 34, 4 + Math.random()*3); ctx.fillStyle = '#ff6b4a'; ctx.fill(); }
+      if (o.bad){ if (M.def.bad==='cloud'){ ctx.save(); ctx.translate(o.x, o.y); ctx.fillStyle = '#6b6f80'; circle(-14, 4, 13); ctx.fill(); circle(2, -4, 17); ctx.fill(); circle(17, 4, 12); ctx.fill(); ctx.fillRect(-14, 4, 31, 12); ctx.fillStyle = '#1d1640'; circle(-4, 2, 2.2); ctx.fill(); circle(8, 2, 2.2); ctx.fill(); ctx.strokeStyle = '#ffd23f'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(4, 16); ctx.lineTo(-2, 26); ctx.lineTo(5, 26); ctx.lineTo(0, 36); ctx.stroke(); ctx.restore(); }
         else { ctx.save(); ctx.translate(o.x, o.y + 16); ctx.rotate(o.rot); ctx.translate(0, -16); ctx.fillStyle = '#9b8574'; ctx.beginPath(); ctx.ellipse(0, 0, 22, 17, 0, 0, Math.PI*2); ctx.fill(); ctx.restore(); } }
       else drawItemT(M.def.item, o.x, o.y, 1.2, Math.cos(o.rot)); }
     const bx = M.bx === undefined ? VW/2 : M.bx;
@@ -1241,7 +1245,7 @@ function drawMini(){
       if (M.def.skin==='bubble'){ circle(o.x, o.y, o.r); ctx.fillStyle = 'rgba(160,220,255,.25)'; ctx.fill(); ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.stroke(); circle(o.x - o.r*0.35, o.y - o.r*0.35, o.r*0.2); ctx.fillStyle = 'rgba(255,255,255,.8)'; ctx.fill(); }
       else if (M.def.skin==='balloon'){ drawBalloon({x:o.x + camX, y:o.y, c:o.bad ? '#1d1640' : o.c, ph:o.ph}); if (o.bad){ ctx.fillStyle = '#fff'; ctx.font = '800 16px ' + FONT; ctx.textAlign = 'center'; ctx.fillText('✖', o.x, o.y + 5); } }
       else { ctx.save(); ctx.translate(o.x, o.y);
-        if (o.bad){ circle(0, 0, 20); ctx.fillStyle = '#1d1640'; ctx.fill(); ctx.fillStyle = '#ff6b4a'; circle(6, -20, 4 + Math.random()*3); ctx.fill(); }
+        if (o.bad){ ctx.fillStyle = '#9b8574'; ctx.beginPath(); ctx.ellipse(0, 0, 22, 17, 0, 0, Math.PI*2); ctx.fill(); ctx.fillStyle = 'rgba(255,255,255,.2)'; ctx.beginPath(); ctx.ellipse(-7, -6, 6, 4, -0.4, 0, Math.PI*2); ctx.fill(); }
         else { ctx.fillStyle = o.c; rr(-9, -26, 18, 40, 6); ctx.fill(); ctx.beginPath(); ctx.moveTo(-9, -24); ctx.lineTo(0, -40); ctx.lineTo(9, -24); ctx.fill(); ctx.fillStyle = '#ffd23f'; ctx.beginPath(); ctx.moveTo(-6, 14); ctx.lineTo(0, 26 + Math.random()*10); ctx.lineTo(6, 14); ctx.fill(); }
         ctx.restore(); } }
   } else if (k==='fish'){
@@ -2361,10 +2365,11 @@ function heart(x, y, s, full){
 function drawHUD(){
   PAUSE_BTN.x = VW - 46;
   if (P.boost > 0){ ctx.save(); ctx.globalAlpha = Math.min(1, P.boost)*0.35; const vg = ctx.createRadialGradient(VW/2, VH/2, VH*0.3, VW/2, VH/2, VW*0.7); vg.addColorStop(0, 'rgba(58,209,255,0)'); vg.addColorStop(1, '#3ad1ff'); ctx.fillStyle = vg; ctx.fillRect(0, 0, VW, VH); ctx.restore(); }
-  ctx.fillStyle='rgba(20,12,50,.5)'; rr(14,14,232,56,28); ctx.fill();
+  ctx.fillStyle='rgba(20,12,50,.5)'; rr(14,14,300,56,28); ctx.fill();
   for (let i=0;i<(L.gd ? 1 : 3);i++) heart(42+i*34, 45, 1.25, i < hearts);
   drawItemT('star', 158, 42, 0.95, 1);
   ctx.fillStyle = hudBump > 0 ? '#ffe27a' : '#fff'; ctx.font='800 '+Math.round(32*(1 + hudBump*0.3))+'px '+FONT; ctx.textAlign='left'; ctx.textBaseline='middle'; ctx.fillText(String(count), 180, 45);
+  if (L.goals && !LEVELS[curLi].type){ const ng = L.goals.findIndex(v=>count < v), cw = ctx.measureText(String(count)).width; ctx.font='800 16px '+FONT; ctx.fillStyle = 'rgba(255,255,255,.75)'; ctx.fillText(ng < 0 ? '★★★' : '/' + L.goals[ng] + ' ' + '★'.repeat(ng+1), 184 + cw, 50); }
   let px = 40;
   for (const k of ALL_POWS){
     if (pow[k] <= 0 || (L.gd && k==='geo')) continue;
@@ -2372,7 +2377,7 @@ function drawHUD(){
     ctx.beginPath(); ctx.arc(px, 106, 25, -Math.PI/2, -Math.PI/2 + Math.PI*2*(pow[k]/POWERS[k].dur)); ctx.strokeStyle = pow[k] < 2.5 && Math.floor(t*6)%2 ? '#ff6b4a' : '#ffd23f'; ctx.lineWidth=5; ctx.stroke();
     drawIcon(k, px, 108, 0.78); px += 60;
   }
-  const bw = clamp(VW - 400, 120, 300), bx = 270 + (VW - 270 - 90 - bw)/2, by = 38;
+  const bw = clamp(VW - 460, 120, 300), bx = 330 + (VW - 330 - 90 - bw)/2, by = 38;
   ctx.fillStyle='rgba(20,12,50,.45)'; rr(bx-6, by-6, bw+12, 24, 12); ctx.fill();
   const frac = clamp(P.x / L.finishX, 0, 1);
   ctx.fillStyle='#ff6b4a'; rr(bx, by, Math.max(12, bw*frac), 12, 6); ctx.fill();
@@ -2562,6 +2567,7 @@ function openLevel(i){
   let n = 0; for (let k=0;k<=i;k++) if (!LEVELS[k].extra) n++;
   document.getElementById('introNum').textContent = lv.extra ? 'Livello extra · Bonus level' : 'Livello '+n+' · Level '+n;
   document.getElementById('introName').textContent = lv.name;
+  document.getElementById('introGoals').textContent = goalText(L.goals) + '  ·  Record: ' + (progress.best[i]||0);
   if (lv.pow){
     document.getElementById('powTitle').textContent = 'Nuovo potere! · New power!';
     document.getElementById('powHint').textContent = POWERS[lv.pow].name+'. '+POWERS[lv.pow].hint+' · '+POWERS[lv.pow].enHint;
@@ -2607,13 +2613,16 @@ function go(){
 }
 function finishLevel(){
   state = 'done'; doneT = 0; fwT = 0; sfx.fanfare(); VOX.cheer(); say('win'); pop('FINISH! Traguardo!', '#ffd23f');
-  const ratio = count / Math.max(1, L.totalItems), n = ratio >= 0.75 ? 3 : ratio >= 0.45 ? 2 : 1;
+  const g = L.goals, n = count >= g[2] ? 3 : count >= g[1] ? 2 : count >= g[0] ? 1 : 0;
+  L.newRecord = count > (progress.best[curLi]||0); if (L.newRecord) progress.best[curLi] = count;
   L.starsWon = n; bank += count; store.set('corri3-bank', bank);
   progress.stars[curLi] = Math.max(progress.stars[curLi]||0, n);
   progress.unlocked = Math.max(progress.unlocked, Math.min(LEVELS.length-1, curLi+1));
   store.set('corri3-progress', progress);
 }
+function goalText(g){ return '★ ' + g[0] + '   ★★ ' + g[1] + '   ★★★ ' + g[2]; }
 function showDone(){
+  document.getElementById('goalLine').textContent = R ? '' : goalText(L.goals) + '  ·  Record: ' + (progress.best[curLi]||0) + (L.newRecord ? '  🏆 Nuovo record! New record!' : '');
   const race = !!R, won = race ? R.starsWon : L.starsWon;
   document.querySelectorAll('#stars svg').forEach((s,i)=>s.classList.toggle('on', i < won));
   const last = curLi === LEVELS.length-1;
