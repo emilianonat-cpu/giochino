@@ -271,14 +271,14 @@ const POWERS = {
   geo:{dur:10, name:'Geometry Dash', en:'Geometry Dash', hint:'Diventi un cubo velocissimo! Salta le punte e tieni premuto per saltare di continuo.', enHint:'Jump over the spikes!'}
 };
 const LEVELS = [
-  {name:'Abu Dhabi', theme:'city', pow:'shoes', speed:305, length:8300},
-  {name:'La scuola', theme:'school', pow:'lego', speed:318, length:8800},
+  {name:'Abu Dhabi', theme:'city', pow:'shoes', speed:305, length:10400},
+  {name:'La scuola', theme:'school', pow:'lego', speed:318, length:11000},
   {name:'Bebè', theme:'nursery', pow:null, speed:245, length:5200, baby:true, extra:true},
-  {name:'Il deserto', theme:'desert', pow:'blocks', speed:330, length:9200},
-  {name:'Ronciglione', theme:'town', pow:'piano', speed:340, length:9900},
+  {name:'Il deserto', theme:'desert', pow:'blocks', speed:330, length:11500},
+  {name:'Ronciglione', theme:'town', pow:'piano', speed:340, length:12400},
   {name:'Corsa a vuoto', type:'race', theme:'town', extra:true},
-  {name:'Lago di Vico', theme:'lake', pow:'fly', speed:345, length:10000},
-  {name:'Scacchi', theme:'chess', pow:'truck', speed:355, length:10400},
+  {name:'Lago di Vico', theme:'lake', pow:'fly', speed:345, length:12500},
+  {name:'Scacchi', theme:'chess', pow:'truck', speed:355, length:13000},
   {name:'Geometria', theme:'geo', pow:'geo', speed:360, length:10400, gd:true},
   {name:'Gran finale', theme:'mix', pow:null, speed:362, length:21000}
 ];
@@ -299,7 +299,7 @@ function unlockedPows(li){ const s = []; for (let i=0;i<=li;i++) if (LEVELS[i].p
 
 function genLevel(li){
   const LV = LEVELS[li], r = mulberry32(4242+li*101), R = (a,b)=>a+r()*(b-a), pick = a=>a[Math.floor(r()*a.length)];
-  const L = {li, gd:!!LV.gd, plats:[], items:[], obst:[], pows:[], friends:[], springs:[], boosts:[], balloons:[], haz:[], orbs:[], portals:[], hints:[], themes: LV.theme==='mix' ? MIX : [LV.theme]};
+  const L = {li, gd:!!LV.gd, plats:[], items:[], obst:[], pows:[], friends:[], springs:[], boosts:[], balloons:[], haz:[], orbs:[], portals:[], hints:[], drops:[], dmg: li >= 3 ? 2 : 1, themes: LV.theme==='mix' ? MIX : [LV.theme]};
   const segLen = LV.length / L.themes.length;
   L.segLen = segLen;
   const themeAt = x => L.themes[clamp(Math.floor(x/segLen), 0, L.themes.length-1)];
@@ -315,10 +315,30 @@ function genLevel(li){
   else if (LV.pow) ch.push({at:LV.length*0.3, pow:LV.pow}, {at:LV.length*0.68, pow:LV.pow});
   else if (LV.baby) ch.push({at:LV.length*0.45, pow:'lego'});
   let ci = 0, nextRand = 1700, nextCh = 1300;
-  const chKinds = li===0 ? ['tunnel','wall','bigGap','tunnel'] : li===1 ? ['tunnel','wall','tightRoof','bigGap','orbGap'] : ['tunnel','wall','tightRoof','spikeRoof','bigGap','orbGap'];
+  const CHK = {
+    city:  ['climb','climb','tunnel','drop','climb','wall','drop'],
+    school:['climb','climb','tunnel','tightRoof','drop','climb','bigGap'],
+    desert:['climb','climb','spikeRoof','bigGap','climb','orbGap','drop'],
+    town:  ['climb','climb','drop','tunnel','climb','tightRoof','drop'],
+    lake:  ['climb','climb','bigGap','orbGap','climb','spikeRoof','drop'],
+    chess: ['climb','climb','tightRoof','spikeRoof','climb','drop','tunnel']
+  };
+  const chKinds = th0=>CHK[th0] || ['climb','tunnel','tightRoof','spikeRoof','bigGap','orbGap','drop','climb'];
+  const DROP_SKIN = {city:'ac', school:'books', desert:'rock', town:'pot', lake:'crate', chess:'rook'};
   const challenge = kind=>{
+    if (y < 300 && kind!=='climb'){ x += 110; plat(x, 420, 380); x += 420; y = 380; }
     const gy = clamp(y, 340, 430);
-    if (kind==='tunnel'){
+    if (kind==='climb'){
+      // pit + very tall wall: only wall jumps get you up
+      x += R(90, 120); plat(x, 340, 410); x += 340;
+      const lake = themeAt(x)==='lake', pf = lake ? 468 : 525;
+      plat(x, 330, pf); L.hints.push({x:x - 260, k:'wall'}); row(x + 60, pf - 45, 3, 60); x += 330;
+      const hy = lake ? 96 : 130; plat(x, 560, hy, {wall:true}); row(x + 150, hy - 44, 4, 55); x += 560; y = hy;
+    } else if (kind==='drop'){
+      x += R(90, 120); plat(x, 1100, gy); L.hints.push({x:x + 50, k:'drop'});
+      for (const dx of [420, 820]) L.drops.push({x:x + dx, y0:gy - 250, y:gy - 250, gy, vy:0, falling:false, done:false, skin:DROP_SKIN[themeAt(x)] || 'crate', rot:0});
+      row(x + 150, gy - 44, 3, 55); x += 1100; y = gy;
+    } else if (kind==='tunnel'){
       x += R(90, 120); plat(x, 950, gy); L.hints.push({x:x - 250, k:'slide'});
       const rx = x + 300, rw = R(260, 380);
       L.haz.push({x:rx, w:rw, y0:-300, y1:gy - 40, k:'roof'}); row(rx + 40, gy - 20, Math.floor(rw/60), 60);
@@ -388,7 +408,7 @@ function genLevel(li){
       }
       continue;
     }
-    if (!LV.baby && x > nextCh && x < LV.length - 500){ nextCh = x + R(700, 1100) - 250*diff; challenge(pick(chKinds)); continue; }
+    if (!LV.baby && x > nextCh && x < LV.length - 500){ nextCh = x + R(350, 600) - 100*diff; L.nch = (L.nch||0) + 1; challenge(L.nch % 2 ? 'climb' : pick(chKinds(th).filter(k=>k!=='climb'))); continue; }
     const gap = R(80, Math.min(gapMax, 115 + 80*prog + 45*diff));
     const ny = clamp(y + R(LV.baby ? -55 : -75, 100), LV.baby ? 320 : 285, 450);
     const pw = R(300 - 60*diff, 640 - 120*diff);
@@ -789,7 +809,9 @@ const HINTS = {
   flip:['Salto mortale! Tocca 2 volte', 'Backflip! Tap twice'],
   small:['Saltino piccolo! Tocca veloce', 'Small jump! Quick tap'],
   orb:['Tocca dentro l\'anello!', 'Tap inside the ring!'],
-  ship:['Navicella! Tieni premuto per salire', 'Ship! Hold to fly up']
+  ship:['Navicella! Tieni premuto per salire', 'Ship! Hold to fly up'],
+  wall:['Salto sul muro! Tocca più volte contro il muro', 'Wall jump! Tap tap against the wall'],
+  drop:['Attento! Cadono cose dall\'alto!', 'Watch out! Things fall from above!']
 };
 function slidePress(){
   if (state!=='play' || countdown > 0 || pow.fly > 0 || P.ship || LEVELS[curLi].baby) return;
@@ -848,8 +870,8 @@ function dust(x,y,n){ for (let i=0;i<n;i++) parts.push({x:x-6, y, vx:-Math.rando
 function burst(x,y,n,spd,cols){ cols = cols || ['#ffd23f','#ff6b4a','#fff','#22b8a7']; for (let i=0;i<n;i++){ const a=i/n*Math.PI*2; parts.push({x, y, vx:Math.cos(a)*spd, vy:Math.sin(a)*spd, life:0.6, max:0.6, c:cols[i%cols.length], sz:5, k:'spark'}); } }
 function cubes(x,y,n,cols){ for (let i=0;i<n;i++) parts.push({x, y, vx:(Math.random()-0.3)*420, vy:-Math.random()*520, life:0.8, max:0.8, c:cols[i%cols.length], sz:7, k:'cube'}); }
 function pop(text, col){ pops.push({x:P.x, y:P.y-100, text, life:1.1, col:col||'#ffd23f'}); }
-function hurt(){
-  hearts = L.gd ? 0 : hearts - 1; P.inv = 1.6; sfx.hurt(); shake = 7; if (!say('ouch')) VOX.ow();
+function hurt(dmg){
+  dmg = dmg || 1; hearts = L.gd ? 0 : Math.max(0, hearts - dmg); if (dmg > 1 && !L.gd) pops.push({x:P.x, y:P.y - 110, text:'-' + dmg + ' ♥', life:1, col:'#ff4d6d'}); P.inv = 1.6; sfx.hurt(); shake = 7; if (!say('ouch')) VOX.ow();
   if (L.gd){ burst(P.x, P.y - 20, 22, 320, [COLORS[AV.color], '#fff']); }
   if (hearts <= 0){ state = 'oops'; oopsT = 0; sfx.oops(); }
 }
@@ -864,6 +886,8 @@ function respawnFromCheckpoint(){
   for (const it of L.items){ it.taken = false; it.mag = false; it.x = it.ox; it.y = it.oy; }
   for (const bl of L.balloons) bl.popped = false;
   for (const pw of L.pows) if (pw.x > x0) pw.taken = false;
+  L.obst = L.obst.filter(o=>!o.fromDrop);
+  for (const d of L.drops){ d.falling = false; d.done = false; d.y = d.y0; d.vy = 0; d.rot = 0; }
   for (const o of L.obst) if (o.home > x0){ o.x = o.home; o.hit = false; o.dy = 0; o.rot = 0; o.vx = 0; o.vy = 0; }
   for (const f of L.friends) if (f.x > x0) f.done = false;
   pet.x = P.x - 60; camX = P.x - VW*0.3; state = 'play'; levelT = 0;
@@ -999,10 +1023,18 @@ function update(dt){
     if (P.x + hw < h.x || P.x - hw > h.x + h.w) continue;
     const top = P.y - (P.slide > 0 ? 30 : ph);
     if (top >= h.y1 || P.y <= h.y0) continue;
+    if (!L.gd && h.y0 < 0 && P.y <= h.y1 && prevTop < h.y1 - 20) continue;
     if (h.k==='roof'){
       if (!P.ground && P.vy < 0 && prevTop >= h.y1 - 16){ P.y = h.y1 + (P.slide > 0 ? 30 : ph); P.vy = 90; sfx.bonk(); }
       else if (P.slide <= 0){ if (state==='play' && P.inv <= 0) hurt(); P.slide = 0.5; }
-    } else if (state==='play' && P.inv <= 0) hurt();
+    } else if (state==='play' && P.inv <= 0) hurt(L.dmg);
+  }
+  for (const d of L.drops){
+    if (d.done) continue;
+    if (!d.falling){ if (d.x - P.x < 340 && d.x > P.x - 20) { d.falling = true; sfx.dive(); } continue; }
+    d.vy += 2200*dt; d.y += d.vy*dt; d.rot += dt*4;
+    if (Math.abs(d.x - P.x) < 28 && d.y > P.y - ph && d.y - 36 < P.y && state==='play' && P.inv <= 0) hurt(1);
+    if (d.y >= d.gy){ d.done = true; shake = 5; sfx.smash(); dust(d.x, d.gy, 10); const o = mkObst(d.x, d.gy, d.skin, Math.random); o.fromDrop = true; L.obst.push(o); }
   }
   for (const pt of L.portals){
     if (prevX < pt.x && P.x >= pt.x){ P.ship = pt.mode==='ship'; flash = 0.25; sfx.poof(); burst(pt.x, P.y - 30, 20, 260, ['#7ae040','#ff9ef0','#fff']); if (P.ship){ P.ground = false; P.on = null; } }
@@ -1033,7 +1065,7 @@ function update(dt){
       else if (P.vy > 150 && P.y < oy-14 && o.t!=='knight' && !o.sharp){
         P.vy = -620; P.ground = false; P.on = null; o.hit = true; o.vx = 200; o.vy = -300; sfx.jump2(); VOX.squeak(); count++; burst(ox, oy-20, 8, 160);
       } else if (state==='attract'){ o.hit = true; o.vx = 260; o.vy = -520; }
-      else if (P.inv <= 0){ o.hit = true; o.vx = 260; o.vy = -520; hurt(); }
+      else if (P.inv <= 0){ o.hit = true; o.vx = 260; o.vy = -520; hurt(o.sharp ? L.dmg : 1); }
     }
   }
   for (const f of L.friends){
@@ -1081,7 +1113,7 @@ function update(dt){
   if (state==='play' && !cpReached && P.x >= L.finishX*0.5){ cpReached = true; sfx.check(); pop('Halfway! Metà strada!', '#22b8a7'); }
   for (const pw of L.pows){
     if (pw.taken) continue;
-    if (Math.abs(pw.x-cx) < rad+22 && Math.abs(pw.y-cy) < 160){
+    if (Math.abs(pw.x-cx) < rad+22 && cy < pw.y + 160){
       pw.taken = true;
       let k = pw.t;
       if (k==='egg'){ const opts = (LEVELS[curLi].theme==='mix') ? ALL_POWS : unlockedPows(curLi); k = opts[Math.floor(Math.random()*opts.length)]; cubes(pw.x, pw.y, 10, ['#fff','#ffd23f','#ff5fa2']); }
@@ -2284,6 +2316,10 @@ function drawWorld(st){
   for (const s of L.springs) s.pad ? drawPad(s) : drawSpring(s);
   for (const h of L.haz) drawHaz(h, st);
   for (const o of L.orbs) drawOrb(o);
+  for (const d of L.drops){ if (d.done) continue; const sx = d.x - camX; if (sx < -60 || sx > VW + 60) continue;
+    if (!d.falling){ ctx.strokeStyle = 'rgba(255,255,255,.7)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(sx, -10); ctx.lineTo(sx, d.y - 36); ctx.stroke(); }
+    else { ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.beginPath(); ctx.ellipse(sx, d.gy + 2, 20, 5, 0, 0, Math.PI*2); ctx.fill(); }
+    drawObst({x:d.x, y:d.y, t:d.skin, mx:0, my:0, dy:0, rot:d.rot, home:d.x, ph:0}, st); }
   for (const pt of L.portals) drawPortal(pt);
   if (L.gd){ const ax = 300 - camX; if (ax > -400){ ctx.font='800 46px '+FONT; ctx.textAlign='left'; ctx.textBaseline='middle'; ctx.fillStyle='rgba(255,255,255,.85)'; ctx.fillText('Attempt ' + gdAttempt, ax, 200); } }
   for (const bo of L.boosts) drawBoost(bo);
