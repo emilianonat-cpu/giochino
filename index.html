@@ -268,8 +268,8 @@ try { const h = decodeURIComponent(location.hash.slice(1)).replace(/[^A-Za-z]/g,
 
 // ---------- levels ----------
 const POWERS = {
-  shoes:{dur:12, name:'Scarpe da parkour', en:'Super shoes', hint:'Tocca di nuovo in aria: doppio salto!', enHint:'Tap again in the air: double jump!'},
-  lego:{dur:12, name:'Mattoncini LEGO', en:'LEGO world', hint:'Tutto diventa LEGO! Costruisci ponti e le stelle valgono doppio.', enHint:'Everything turns into LEGO!'},
+  shoes:{dur:10, name:'Scarpe a molla', en:'Pogo shoes', hint:'Rimbalzi da solo sempre più in alto, schiacci tutto e DASH infinito!', enHint:'Auto-bounce, stomp everything, endless DASH!'},
+  lego:{dur:12, name:'Mattoncini LEGO', en:'LEGO world', hint:'Tocca per costruire una scaletta e salire sulle torri! Le stelle valgono doppio.', enHint:'Tap to stack bricks and climb the towers!'},
   blocks:{dur:12, name:'Mondo Minecraft', en:'Minecraft world', hint:'Tutto diventa a cubetti! Costruisci ponti e rompi gli ostacoli.', enHint:'Build bridges and smash blocks!'},
   truck:{dur:8, name:'Monster truck', en:'Monster truck', hint:'Sfonda tutti gli ostacoli!', enHint:'Crush everything!'},
   piano:{dur:12, name:'Pianola magica', en:'Magic piano', hint:'Fa apparire i tasti per attraversare!', enHint:'Play the keys to cross!'},
@@ -418,6 +418,13 @@ function genLevel(li){
         x += 70; plat(x, 360, 245); row(x+80, 200, 4, 55); x += 360;
         x += 110; plat(x, 300, 400); x += 300;
         x += 70; plat(x, 420, 238); row(x+80, 194, 5, 55); x += 420; y = 238;
+      } else if (pw==='lego' && !LV.baby){
+        // LEGO towers: tap to stack bricks under your feet and climb, gaps get bridged at your height
+        L.hints.push({x:x - 300, k:'lego'});
+        x += 200; plat(x, 300, 290, {wall:true}); row(x + 50, 246, 4, 60); x += 300;
+        x += 160; row(x - 120, 210, 3, 55); plat(x, 300, 170, {wall:true}); row(x + 50, 126, 4, 60); x += 300;
+        x += 220; row(x - 200, 60, 4, 55); plat(x, 280, 90, {wall:true}); row(x + 50, 46, 4, 60); x += 280;
+        x += 260; arc(x - 260, x, 150, 60, 4); plat(x, 520, 410); x += 520; y = 410;
       } else if (pw==='lego' || pw==='blocks'){
         const g1 = LV.baby ? 380 : pw==='blocks' ? 560 : 500;
         row(x+40, 368, Math.floor(g1/55), 55); x += g1; plat(x, 420, 410); x += 420;
@@ -665,7 +672,9 @@ const sfx = {
   balloon(){ tone(300,0.4,'sine',0.14,0,600); },
   slide(){ noise(0.35, 0.18, 900); tone(240,0.3,'sawtooth',0.04,0,120); },
   dive(){ tone(900,0.2,'square',0.05,0,200); },
-  dash(){ tone(300,0.18,'sawtooth',0.07,0,1600); noise(0.15, 0.08, 4000); },
+  dash(){ tone(300,0.18,'sawtooth',0.07,0,1600); noise(0.15, 0.08, 4000); tone(1200,0.12,'square',0.03,0.05,2400); },
+  wall(n){ const b = 520 + Math.min(n,8)*90; tone(b,0.14,'square',0.07,0,b*2); tone(b*1.5,0.1,'triangle',0.06,0.04); noise(0.05,0.12,3000); },
+  pogo(n){ const b = 220 + Math.min(n,6)*40; tone(b,0.22,'sine',0.22,0,b*3.5); },
   zip(){ noise(0.5, 0.05, 5000); tone(700,0.3,'triangle',0.04,0,900); },
   crack(){ noise(0.12, 0.12, 1500); },
   bonk(){ tone(160,0.12,'square',0.1,0,90); noise(0.06,0.2,600); },
@@ -870,13 +879,14 @@ async function recordSlot(k, btn, onDone){
 }
 
 // ---------- gameplay ----------
-const maxJumps = ()=> (LEVELS[curLi].baby || pow.geo > 0) ? 0 : pow.shoes > 0 ? 2 : 1;
+const maxJumps = ()=> (LEVELS[curLi].baby || pow.geo > 0) ? 0 : 1;
 let gdAttempt = 1, hint = null, mcNeed = false;
 const HINTS = {
   slide:['⬇ Scivola! Usa il tasto giù', '⬇ Slide! Use the down button'],
   flip:['Salto mortale! Tocca 2 volte', 'Backflip! Tap twice'],
   small:['Saltino piccolo! Tocca veloce', 'Small jump! Quick tap'],
   orb:['Tocca dentro l\'anello!', 'Tap inside the ring!'],
+  lego:['Torri LEGO! Tocca tocca tocca per costruire la scaletta', 'LEGO towers! Tap tap tap to stack up'],
   ship:['Navicella! Tieni premuto per salire', 'Ship! Hold to fly up'],
   wall:['Salto sul muro! Tocca più volte contro il muro', 'Wall jump! Tap tap against the wall'],
   drop:['Attento! Cadono cose dall\'alto!', 'Watch out! Things fall from above!'],
@@ -895,7 +905,8 @@ function dashPress(){
   if (state!=='play' || countdown > 0 || pow.fly > 0 || pow.truck > 0 || P.ship || P.zip || LEVELS[curLi].baby || L.gd) return;
   if (P.dashT > 0 || (!P.ground && !P.dashOK)) return;
   if (!P.ground) P.dashOK = false;
-  P.dashT = 0.22; P.slide = 0; if (!P.ground) P.vy = Math.min(P.vy, 0) * 0.2;
+  P.dashT = 0.22; P.slide = 0; if (!P.ground) P.vy = Math.min(P.vy, 0) * 0.2; if (pow.shoes > 0) P.dashOK = true;
+  shake = 5; flash = Math.max(flash, 0.08); P.dashN = (P.dashN||0) + 1;
   sfx.dash(); pop('DASH!', '#ff9ef0'); burst(P.x - 10, P.y - 30, 10, 200, ['#ff9ef0','#fff','#3ad1ff']);
 }
 function zipY(z, x){ return z.y0 + (z.y1 - z.y0)*(x - z.x0)/(z.x1 - z.x0); }
@@ -929,10 +940,18 @@ function doJump(){
   if (pow.fly > 0 && !P.ground) return true;
   if (P.ship) return true;
   if (P.zip){ P.zip = null; P.vy = -820; P.holdT = 0; P.jumps = maxJumps(); P.dashOK = true; P.spin = 0.001; sfx.jump2(); pop('Salto! Jump off!', '#3ad1ff'); return true; }
+  if (pow.lego > 0 && P.ground && !LEVELS[curLi].baby && L.plats.some(p=>solid(p) && !p.brick && p.x >= P.x - 12 && p.x - P.x < 120 && p.y < P.y - 10 && p.y > P.y - 420) && legoUp()) return true;
   if (pow.blocks > 0 && !L.zips.some(z=>P.x > z.x0 - 200 && P.x < z.x1) && mcBuild()) return true;
   if (!P.ground && P.coyote <= 0){
     if (useOrb()) return true;
-    if (P.wallT > 0){ P.vy = -990; P.wallT = 0; P.holdT = 0; P.spin = 0.001; P.jumps = maxJumps(); P.dashOK = true; sfx.jump2(); VOX.hop(); pop('Wall jump!', '#3ad1ff'); dust(P.x + 8, P.y - 30, 6); return true; }
+    if (P.wallT > 0){
+      P.vy = -990; P.wallT = 0; P.holdT = 0; P.spin = 0.001; P.jumps = maxJumps(); P.dashOK = true; P.wj = (P.wj||0) + 1;
+      sfx.wall(P.wj); VOX.hop(); shake = 4 + Math.min(6, P.wj); slowT = 0.09;
+      burst(P.x + 10, P.y - 30, 12 + P.wj*3, 240, ['#3ad1ff','#fff','#ff9ef0','#ffd23f']);
+      for (let i=0;i<8;i++) parts.push({x:P.x + 12, y:P.y - 20 - i*6, vx:-60 - Math.random()*120, vy:(Math.random()-0.5)*120, life:0.4, max:0.4, c:'#fff', sz:5, k:'spark'});
+      if (P.wj >= 2){ count += P.wj - 1; hudBump = 1; pop('Wall jump x' + P.wj + '! +' + (P.wj - 1), P.wj >= 4 ? '#ff9ef0' : '#3ad1ff'); } else pop('Wall jump!', '#3ad1ff');
+      return true;
+    }
   }
   if (P.ground || P.coyote > 0){
     P.slide = 0;
@@ -989,7 +1008,9 @@ function collectItem(it){
   if (combo % 5 === 0) pop(COMBO_WORDS[Math.floor(Math.random()*COMBO_WORDS.length)] + ' x' + combo);
 }
 
+let slowT = 0;
 function update(dt){
+  if (slowT > 0){ slowT -= dt; dt *= 0.35; }
   t += dt;
   if (state==='race' || state==='racedone'){ updateRace(dt); return; }
   if (state==='intro' || state==='paused' || state==='stable') return;
@@ -1018,7 +1039,7 @@ function update(dt){
   comboT -= dt; if (comboT <= 0) combo = 0;
   shake = Math.max(0, shake - dt*30);
   const LV = LEVELS[curLi], truck = pow.truck > 0, fly = pow.fly > 0;
-  let target = LV.speed * (L.pro ? (L.gd ? 1.08 : 1.3) : 1) * (truck ? 1.12 : pow.geo > 0 ? 1.15 : pow.blocks > 0 ? 0.9 : 1) * (0.94 + 0.16*clamp(P.x/L.finishX, 0, 1)) * (P.boost > 0 ? 1.45 : 1);
+  let target = LV.speed * (L.pro ? (L.gd ? 1.08 : 1.3) : 1) * (truck ? 1.12 : pow.geo > 0 ? (L.pro && !L.gd ? 0.92 : 1.15) : pow.blocks > 0 ? 0.9 : 1) * (0.94 + 0.16*clamp(P.x/L.finishX, 0, 1)) * (P.boost > 0 ? 1.45 : 1);
   if (state==='play' && countdown > 0) target = 0;
   if (state==='done') target = P.x > L.fin.x + L.fin.w - 450 ? 0 : LV.speed*0.8;
   P.sp += (target - P.sp) * Math.min(1, dt*(target < P.sp ? 6 : 4));
@@ -1045,6 +1066,8 @@ function update(dt){
 
   const hw = truck ? 34 : 10, ph = truck ? 72 : (LV.baby ? 40 : 60);
   const prevX = P.x; P.x += (sp + (P.dashT > 0 ? 700 : 0))*dt;
+  if (P.dashT > 0){ (P.ghosts = P.ghosts || []).push({x:P.x, y:P.y, life:0.28}); }
+  if (P.ghosts){ for (const g of P.ghosts) g.life -= dt; P.ghosts = P.ghosts.filter(g=>g.life > 0); }
   if (P.dashT > 0 && Math.random() < 0.9) parts.push({x:P.x - 10, y:P.y - 10 - Math.random()*45, vx:-300, vy:0, life:0.25, max:0.25, c:'rgba(255,158,240,.8)', sz:30 + Math.random()*30, k:'line'});
   for (const p of L.plats) if (p.bob) p.y = p.y0 + Math.sin(t*2 + p.ph)*p.bob;
   for (const p of L.plats) if (p.crumble && p.ct != null && t - p.ct > 0.32){ if (!p.fall){ p.fall = true; p.vy = 0; sfx.crack(); } p.vy += 2000*dt; p.y += p.vy*dt; }
@@ -1059,8 +1082,8 @@ function update(dt){
     if (P.y > p.y+8 && prevX+hw <= p.x+1 && P.x+hw > p.x){
       P.x = p.x - hw;
       if (L.gd && state==='play' && P.inv <= 0) hurt();
-      if (!P.ground && !builds){ P.wallT = 0.22; if (P.vy > 170) P.vy = 170; }
-      if (builds && P.ground){ P.vy = -840; P.ground = false; P.on = null; sfx.block(); }
+      if (!P.ground){ P.wallT = 0.22; if (P.vy > 170) P.vy = 170; if (P.vy > 0 && Math.random() < 0.7) parts.push({x:P.x + hw, y:P.y - 30 - Math.random()*20, vx:-30 - Math.random()*60, vy:-40 - Math.random()*80, life:0.35, max:0.35, c:['#ffd23f','#fff','#ff9e3a'][Math.floor(Math.random()*3)], sz:3, k:'spark'}); }
+      if (builds && P.ground && LEVELS[curLi].baby){ P.vy = -840; P.ground = false; P.on = null; sfx.block(); }
     }
   }
   if (P.ground){
@@ -1068,7 +1091,7 @@ function update(dt){
     if (P.on && solid(P.on) && P.x+hw >= P.on.x && P.x-hw <= P.on.x+P.on.w) sup = P.on;
     else for (const p of L.plats){ if (solid(p) && P.x+hw >= p.x && P.x-hw <= p.x+p.w && Math.abs(p.y-P.y) < 14){ sup = p; break; } }
     if (!sup && builds && !platUnder(P.x)) sup = addBlock();
-    if (sup){ P.y = sup.y; P.vy = 0; P.on = sup; P.lastGY = sup.y; P.jumps = maxJumps(); P.dashOK = true; if (sup.crumble && sup.ct == null){ sup.ct = t; sfx.crack(); } }
+    if (sup){ P.y = sup.y; P.vy = 0; P.on = sup; P.lastGY = sup.y; P.jumps = maxJumps(); P.dashOK = true; P.wj = 0; if (sup.crumble && sup.ct == null){ sup.ct = t; sfx.crack(); } }
     else { P.ground = false; P.on = null; P.coyote = 0.15; }
   }
   // springs
@@ -1105,7 +1128,11 @@ function update(dt){
       if (P.balloon) P.balloon = false;
       if (truck) shake = 6;
       if (land.ghost && state!=='attract'){ pianoKey(FRA[pianoIdx++%FRA.length]); land.lit = t; }
-      P.ground = true; P.on = land; P.vy = 0; P.lastGY = ny; P.jumps = maxJumps(); P.dashOK = true;
+      P.ground = true; P.on = land; P.vy = 0; P.lastGY = ny; P.jumps = maxJumps(); P.dashOK = true; P.wj = 0;
+      if (pow.shoes > 0 && pow.geo <= 0 && pow.truck <= 0 && pow.lego <= 0 && pow.blocks <= 0 && P.slide <= 0 && !P.slideQ && state!=='attract' && !(LEVELS[curLi].baby)){
+        P.pogo = Math.min((P.pogo||0) + 1, 4); P.vy = -(900 + P.pogo*60); P.ground = false; P.on = null; P.holdT = 0; P.sq = 1.5; P.spin = P.pogo >= 3 ? 0.001 : 0;
+        sfx.pogo(P.pogo); burst(P.x, ny, 10, 200, ['#ff4d6d','#ffd23f','#3ad1ff','#7ae040','#ff9ef0']); if (P.pogo >= 3) pop('BOING x' + P.pogo + '!', '#ffd23f');
+      }
       if (land.crumble && land.ct == null){ land.ct = t; sfx.crack(); }
     }
     if (!P.ground && L.zips.length && P.vy > -700){
@@ -1165,6 +1192,7 @@ function update(dt){
     if (Math.abs(ox - P.x) < hw+14 && P.y > oy-34 && P.y-ph+8 < oy){
       if (truck) smashObst(o, ox, oy, 'n');
       else if (pow.blocks>0) smashObst(o, ox, oy, 'mc');
+      else if ((P.dashT > 0 || (pow.shoes > 0 && P.vy > 0 && P.y < oy - 6)) && !o.sharp && state==='play'){ smashObst(o, ox, oy, 'n'); pop(P.dashT > 0 ? 'DASH SMASH! +1' : 'STOMP! +1', '#ff9ef0'); if (pow.shoes > 0 && P.dashT <= 0){ P.vy = -900; P.ground = false; P.on = null; } }
       else if (P.vy > 150 && P.y < oy-14 && o.t!=='knight' && !o.sharp){
         if (P.slideQ){ P.slideQ = false; pop('STOMP!', '#ffd23f'); shake = 6; count += 2; } P.vy = -620; P.ground = false; P.on = null; P.dashOK = true; o.hit = true; o.vx = 200; o.vy = -300; sfx.jump2(); VOX.squeak(); count++; burst(ox, oy-20, 8, 160);
       } else if (state==='attract'){ o.hit = true; o.vx = 260; o.vy = -520; }
@@ -1223,10 +1251,11 @@ function update(dt){
       pow[k] = POWERS[k].dur; banner = {t:k, time:0};
       sfx.power(); if (k==='truck') sfx.vroom();
       if (!say('power')) pop(POWERS[k].en + '!', '#fff');
-      if (k==='shoes' && !P.ground) P.jumps = 1;
+      if (k==='shoes'){ P.dashOK = true; P.pogo = 0; }
       burst(pw.x, pw.y, 20, 260);
     }
   }
+  if (pow.shoes>0 && !P.ground) parts.push({x:P.x - 6, y:P.y - 8, vx:-80, vy:0, life:0.45, max:0.45, c:'hsl(' + ((t*600) % 360) + ',95%,60%)', sz:6, k:'dot'});
   if (pow.shoes>0 && Math.random()<0.5) parts.push({x:P.x-8, y:P.y-4, vx:-60, vy:-20, life:0.5, max:0.5, c:['#ffd23f','#7cf','#f8a'][Math.floor(Math.random()*3)], sz:3, k:'spark'});
   if (pow.piano>0 && Math.random()<0.06) parts.push({x:P.x-10, y:P.y-60, vx:-40, vy:-60, life:1.2, max:1.2, c:'#fff', sz:22, k:'note'});
   if (fly && Math.random()<0.6) parts.push({x:P.x-20, y:P.y-30, vx:-120, vy:(Math.random()-0.5)*40, life:0.5, max:0.5, c:['#ffd23f','#fff','#ff6b4a'][Math.floor(Math.random()*3)], sz:3, k:'spark'});
@@ -1424,6 +1453,15 @@ function drawMini(){
   if (OY > 0){ ctx.setTransform(DPR,0,0,DPR,0,0); ctx.fillStyle = '#1d1640'; ctx.fillRect(0, OY + VH*S - 1, CW, OY + 2); }
 }
 function confetti(){ parts.push({x:camX+Math.random()*VW, y:-10, vx:(Math.random()-0.5)*60, vy:120+Math.random()*120, life:3.5, max:3.5, c:['#ffd23f','#ff6b4a','#22b8a7','#fff','#8f6bff'][Math.floor(Math.random()*5)], sz:7, k:'conf', r:Math.random()*6}); }
+function legoUp(){
+  if (P.y - 40 < 70) return false;
+  const ny = P.y - 40, b = {x:Math.round(P.x - 20), w:40, y:ny, y0:ny, s:-1, brick:'lego', born:t, c:Math.floor(Math.random()*6)};
+  L.plats.push(b); P.y = ny; P.on = b; P.lastGY = ny; P.vy = 0; P.sq = 0.8; P.legoN = (P.legoN||0) + 1;
+  tone(mf(72 + Math.min(P.legoN, 12)*2), 0.08, 'triangle', 0.14); sfx.click();
+  for (let i=0;i<6;i++) parts.push({x:P.x, y:ny + 20, vx:(Math.random()-0.5)*200, vy:-Math.random()*200, life:0.5, max:0.5, c:LEGO_COLS[b.c], sz:5, k:'cube'});
+  if (P.legoN % 3 === 0) pop(['Scaletta!','Più su!','Stack it!','Torre!'][Math.floor(Math.random()*4)], LEGO_COLS[b.c]);
+  return true;
+}
 function addBlock(){
   const kind = pow.blocks > 0 ? 'mc' : 'lego';
   const bx = Math.floor((P.x - 6)/40)*40;
@@ -2516,7 +2554,8 @@ function drawWorld(st){
   const px = P.x - camX;
   if (pow.truck>0) drawTruck(px, P.y);
   else if (P.ship) drawShip(px, P.y);
-  else { if (P.zip){ const zy = zipY(P.zip, P.x); ctx.fillStyle = '#ff6b4a'; rr(px - 12, zy - 6, 24, 12, 4); ctx.fill(); ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(px, zy + 4); ctx.lineTo(px, P.y - 52); ctx.stroke(); }
+  else { if (P.ghosts && P.ghosts.length && st!=='geo'){ ctx.save(); for (let gi=0; gi<P.ghosts.length; gi+=2){ const g = P.ghosts[gi]; ctx.globalAlpha = g.life/0.28*0.45; ctx.save(); ctx.translate(g.x - camX, g.y); ctx.filter = 'hue-rotate(' + (gi*40) + 'deg) saturate(2)'; drawCharacter(AV, {me:true, dash:true, run:P.anim, air:!P.ground, style:st, sq:1}); ctx.restore(); } ctx.filter = 'none'; ctx.restore(); }
+    if (P.zip){ const zy = zipY(P.zip, P.x); ctx.fillStyle = '#ff6b4a'; rr(px - 12, zy - 6, 24, 12, 4); ctx.fill(); ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(px, zy + 4); ctx.lineTo(px, P.y - 52); ctx.stroke(); }
     ctx.save(); ctx.translate(px, P.y); if (P.slide > 0 && st!=='geo'){ ctx.translate(-4, 0); ctx.rotate(-1.2); } drawCharacter(AV, {me:true, vy:P.vy, zip:!!P.zip, dash:P.dashT > 0, wall:P.wallT > 0 && !P.ground, run:P.anim, air:!P.ground, spin:P.spin, inv:P.inv>0, balloon:P.balloon, fly:pow.fly>0 && !P.ground, sq:P.sq, style:st, baby:LEVELS[curLi].baby && st!=='geo', geoRot:P.geoRot}); ctx.restore(); }
   if (st!=='mc') drawNameTag();
   for (const b of bubbles){
@@ -2665,10 +2704,10 @@ function draw(){
   const st = curStyle();
   let rs = DPR;
   if (st==='mc'){
-    const w = Math.ceil(CW/4), h = Math.ceil(CH/4);
+    const w = Math.ceil(CW/2), h = Math.ceil(CH/2);
     if (!pix){ pix = document.createElement('canvas'); pixCtx = pix.getContext('2d'); }
     if (pix.width !== w || pix.height !== h){ pix.width = w; pix.height = h; }
-    ctx = pixCtx; rs = 0.25; ctx.imageSmoothingEnabled = false;
+    ctx = pixCtx; rs = 0.5; ctx.imageSmoothingEnabled = false;
   }
   const center = camX + VW*0.5, segLen = L.segLen;
   let thA = L.themeAt(center), thB = null, mixA = 0;
@@ -2687,7 +2726,7 @@ function draw(){
   drawWorld(st);
   if (st==='mc'){
     ctx = main; ctx.setTransform(1,0,0,1,0,0); ctx.imageSmoothingEnabled = false;
-    ctx.drawImage(pix, 0, 0, pix.width, pix.height, 0, 0, pix.width*4*DPR, pix.height*4*DPR);
+    ctx.drawImage(pix, 0, 0, pix.width, pix.height, 0, 0, pix.width*2*DPR, pix.height*2*DPR);
     ctx.imageSmoothingEnabled = true;
   }
   ctx.setTransform(DPR*S,0,0,DPR*S,0,OY*DPR);
