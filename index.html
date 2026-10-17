@@ -401,6 +401,29 @@ function genLevel(li){
     home:  ['climb','climb','tunnel','drop','climb','tightRoof','bigGap']
   };
   const chKinds = th0=>CHK[th0] || ['climb','tunnel','tightRoof','spikeRoof','bigGap','orbGap','drop','climb'];
+  const RECIPE = {
+    city:  {rooftops:3, zip:3, wall:2, climb:2, dashGap:2, lasers:1, tunnel:1, drop:1},
+    school:{trampo:3, tunnel:2, lasers:2, bigGap:2, crumble:1, saws:1, climb:1, tightRoof:1},
+    desert:{crumble:3, orbGap:3, bigGap:2, spikeRoof:2, dashGap:2, saws:1, climb:1},
+    town:  {stairs:3, climb:2, drop:2, lift:2, tightRoof:2, zip:1, combo:1},
+    lake:  {boats:3, lift:2, orbGap:2, bigGap:2, zip:1, dashGap:1},
+    chess: {knights:3, lasers:3, saws:2, spikeRoof:1, tightRoof:1, crumble:1, combo:1},
+    home:  {tables:3, shelves:3, trampo:2, drop:2, lasers:1, lift:1},
+    nursery:{tunnel:1, bigGap:1}
+  };
+  const decks = {}; let lastKind = '';
+  const drawKind = th0=>{
+    let d = decks[th0];
+    if (!d || !d.length){
+      const rc = RECIPE[th0] || {climb:2, tunnel:1, tightRoof:1, spikeRoof:1, bigGap:1, orbGap:1, drop:1, saws:1, crumble:1, lift:1, dashGap:1, zip:1};
+      d = []; for (const k in rc) for (let i=0;i<rc[k];i++) d.push(k);
+      if (!PRO) d = d.filter(k=>!['saws','lasers','crumble','lift','dashGap','zip','combo'].includes(k));
+      for (let i=d.length-1;i>0;i--){ const j = Math.floor(r()*(i+1)); [d[i], d[j]] = [d[j], d[i]]; }
+      decks[th0] = d;
+    }
+    let k = d.shift(); if (k===lastKind && d.length){ d.push(k); k = d.shift(); }
+    lastKind = k; return k;
+  };
   const PRO_K = {
     city:['zip','lasers','dashGap','saws','combo','lift'], school:['crumble','lasers','saws','dashGap','combo'], desert:['saws','lasers','dashGap','crumble','zip'],
     town:['lift','lasers','zip','crumble','combo','saws'], lake:['lift','lasers','zip','dashGap','crumble'], chess:['saws','lasers','combo','crumble','dashGap','zip'],
@@ -484,6 +507,44 @@ function genLevel(li){
       L.zips.push({x0:z0 + 820, y0:gy - 195, x1:z0 + 1640, y1:gy - 140});
       row(z0 + 120, gy - 60, 6, 110); row(z0 + 980, gy - 90, 6, 110);
       x = z0 + 1500; plat(x, 560, gy); x += 560; y = gy;
+    } else if (kind==='rooftops'){
+      // skyline: buildings of different heights, hop from roof to roof
+      x += R(90, 120); let hy = gy;
+      for (let k=0;k<5;k++){ const w = R(170, 260); hy = clamp(k%2 ? hy + R(40, 90) : hy - R(45, 75), 250, 430); x += k ? R(110, 160) : 0; plat(x, w, hy); L.items.push({x:x + w/2, y:hy - 50}); if (k===2 && wantCoin()) coinAt(x + w/2, hy - 280); x += w; }
+      x += R(100, 140); const fy = Math.max(gy, hy - 70); plat(x, 420, fy); x += 420; y = fy;
+    } else if (kind==='trampo'){
+      // trampolines over pits: bounce from one to the next
+      x += R(90, 120); plat(x, 340, gy); x += 340;
+      for (let k=0;k<3;k++){ x += R(150, 175); plat(x, 170, gy); L.springs.push({x:x + 60, y:gy, t:-9}); arc(x + 50, x + 330, gy - 140, 130, 5); x += 170; }
+      x += R(150, 175); plat(x, 460, gy); x += 460; y = gy;
+    } else if (kind==='stairs'){
+      // steep village street: climb the steps, then a big leap down
+      x += R(90, 120); plat(x, 300, gy); x += 300; let sy = gy;
+      for (let k=0;k<5;k++){ x += R(70, 100); sy = Math.max(130, sy - R(45, 62)); const w = R(150, 190); plat(x, w, sy); L.items.push({x:x + w/2, y:sy - 45}); x += w; }
+      if (wantCoin()) coinAt(x + 60, sy - 120);
+      const g = R(260, 320); arc(x, x + g, sy - 40, 60, 5); x += g; plat(x, 520, gy); x += 520; y = gy;
+    } else if (kind==='boats'){
+      // little boats bobbing on the lake
+      x += R(90, 120); plat(x, 360, gy); x += 360;
+      for (let k=0;k<5;k++){ x += R(130, 170); const w = R(150, 200), by = clamp(gy + R(-25, 25), 340, 440); plat(x, w, by, {bob:26, ph:r()*6}); L.items.push({x:x + w/2, y:by - 55}); x += w; }
+      x += R(120, 150); plat(x, 460, gy); x += 460; y = gy;
+    } else if (kind==='knights'){
+      // L-shaped knight hops: up two, across, down, with spikes on the low squares
+      x += R(90, 120); plat(x, 300, gy); x += 300;
+      for (let k=0;k<5;k++){ x += R(110, 140); const hy = k%2 ? gy - R(95, 115) : gy, w = k%2 ? 180 : 360; plat(x, w, hy); if (!(k%2) && PRO){ L.obst.push(mkObst(x + 240, hy, 'spike', r)); L.items.push({x:x + 240, y:hy - 110}); } else L.items.push({x:x + w/2, y:hy - 45}); x += w; }
+      x += R(110, 140); plat(x, 460, gy); x += 460; y = gy;
+    } else if (kind==='tables'){
+      // a row of tables: slide under each one
+      x += R(90, 120); L.hints.push({x:x - 250, k:'slide'});
+      for (let k=0;k<3;k++){ plat(x, 580, gy); const rx = x + 280, rw = R(170, 220); L.haz.push({x:rx, w:rw, y0:-300, y1:gy - 40, k:'roof'}); row(rx + 30, gy - 20, Math.floor(rw/60), 60); x += 580; if (k < 2) x += R(90, 110); }
+      y = gy;
+    } else if (kind==='shelves'){
+      // climb a bookcase shelf by shelf, then jump back down
+      x += R(90, 120); plat(x, 320, gy); x += 320; let sy = gy;
+      for (let k=0;k<4;k++){ x += R(60, 90); sy -= R(70, 90); plat(x, 130, sy); L.items.push({x:x + 65, y:sy - 45}); x += 130; }
+      if (wantCoin()) coinAt(x - 60, sy - 150);
+      for (let k=0;k<2;k++){ x += R(110, 140); sy += R(70, 100); plat(x, 160, sy); L.items.push({x:x + 80, y:sy - 45}); x += 160; }
+      x += R(110, 140); const fy = Math.max(gy, sy); plat(x, 460, fy); x += 460; y = fy;
     } else if (kind==='orbGap'){
       x += R(90, 120); plat(x, 420, gy); x += 420; L.hints.push({x:x - 500, k:'orb'});
       const g = R(380, 430); L.orbs.push({x:x + 175, y:gy - 190, t:-9}); arc(x + 175, x + g, gy - 260, 60, 4); x += g;
@@ -535,16 +596,18 @@ function genLevel(li){
         for (let k=0;k<14;k++){ const tt=(k+1)/15; L.items.push({x:x+gap*tt, y:250-Math.sin(tt*Math.PI*2)*90}); }
         x += gap; plat(x, 480, 390); x += 480; y = 390;
       }
+      // let the power run out on easy ground before the next challenge
+      nextCh = Math.max(nextCh, x + (pw==='fly' ? 2600 : pw==='geo' ? 400 : 900));
       continue;
     }
     if (!LV.baby && x > nextCh && x < LVLEN - 500){
       L.nch = (L.nch||0) + 1;
       if (PRO){
         nextCh = x + R(50, 160);
-        const PK = PRO_K[th] || ['saws','crumble','lift','dashGap','zip'];
-        const kind = L.nch % 3 === 1 ? 'climb' : L.nch % 3 === 2 ? PK[(L.nch/3|0) % PK.length] : pick(chKinds(th).filter(k=>k!=='climb').concat(PK));
+        if (r() < 0.3) nextCh = x + R(400, 800);
+        const kind = drawKind(th);
         if (kind==='combo'){ challenge('tunnel'); challenge('climb'); } else challenge(kind);
-      } else { nextCh = x + R(350, 600) - 100*diff; challenge(L.nch % 2 ? 'climb' : pick(chKinds(th).filter(k=>k!=='climb'))); }
+      } else { nextCh = x + R(350, 600) - 100*diff; challenge(drawKind(th)); }
       continue;
     }
     const gap = R(80, Math.min(gapMax, 115 + 80*prog + 45*diff));
@@ -1026,7 +1089,17 @@ const SONGS = {
   tramp:  {bpm:132, root:62, scale:[0,2,4,5,7,9,11], prog:[0,5,3,4], seed:53, style:'rave', rbpm:136},
   geo2:   {bpm:164, root:59, scale:[0,2,3,5,7,8,10], prog:[0,3,5,4], seed:47, style:'rave', rbpm:172},
   home:   {bpm:130, root:52, scale:[0,2,3,5,7,8,10], prog:[0,5,6,0], seed:61, style:'rock'},
-  bossrock:{bpm:150, root:52, scale:[0,2,3,5,7,8,10], prog:[0,3,5,4], seed:67, style:'rock'},
+  boss_home:{bpm:150, root:52, scale:[0,2,3,5,7,8,10], prog:[0,3,5,4], seed:67, style:'rock'},
+  // every boss has its own theme
+  boss_city:  {bpm:140, root:62, scale:[0,1,4,5,7,8,10], prog:[0,0,6,5], seed:71, style:'arab'},
+  boss_school:{bpm:150, root:57, scale:[0,2,3,5,7,8,10], prog:[0,5,3,4], seed:73, style:'chip', minor:true},
+  boss_desert:{bpm:140, root:62, scale:[0,1,4,5,7,8,10], prog:[0,6,5,0], seed:79, style:'rave', rbpm:160},
+  boss_town:  {bpm:180, root:57, scale:[0,2,3,5,7,8,11], prog:[0,3,4,0], seed:83, style:'carnival'},
+  boss_lake:  {bpm:118, root:52, scale:[0,2,3,5,7,8,10], prog:[0,0,5,4], seed:89, style:'jaws'},
+  boss_chess: {bpm:128, root:64, scale:[0,2,3,5,7,8,11], prog:[0,3,4,0], seed:91, style:'techno', mel:[64,66,67,69,71,67,71,null,70,66,70,null,69,65,69,null,64,66,67,69,71,67,71,76,74,71,67,71,74,null,null,null,71,73,74,76,78,74,78,null,77,73,77,null,76,72,76,null,71,73,74,76,78,74,78,83,81,78,74,78,81,null,null,null], kb:[40,40,40,40,47,47,40,40]},
+  boss_queen: {bpm:158, root:64, scale:[0,2,3,5,7,8,11], prog:[0,3,4,0], seed:93, style:'techno', mel:[64,66,67,69,71,67,71,null,70,66,70,null,69,65,69,null,64,66,67,69,71,67,71,76,74,71,67,71,74,null,null,null,71,73,74,76,78,74,78,null,77,73,77,null,76,72,76,null,71,73,74,76,78,74,78,83,81,78,74,78,81,null,null,null], kb:[40,40,45,45,47,47,40,40]},
+  boss_mix:   {bpm:150, root:60, scale:[0,2,3,5,7,8,10], prog:[0,5,6,4], seed:97, style:'chip', minor:true, rbpm:176},
+  boss_nanny: {bpm:150, root:60, scale:[0,2,4,5,7,9,11], prog:[0,4,4,0], seed:99, style:'carnival', mel:[76,76,79,null,76,76,79,null,76,79,84,83,81,null,81,79,74,76,77,null,74,76,77,null,74,77,83,81,79,null,83,84]},
   boss:   {bpm:150, root:57, scale:[0,2,3,5,7,8,10], prog:[0,5,6,4], seed:2, style:'rave', rbpm:166}
 };
 function buildSong(sg){
@@ -1037,17 +1110,17 @@ function buildSong(sg){
     [0,_,0,4, _,4,5,4, 2,_,2,_, 0,_,-1,0], [4,4,_,4, 7,_,4,_, 5,5,_,5, 4,_,2,_], [0,2,4,_, 4,_,2,4, 5,_,4,2, 0,_,_,_],
     [7,_,7,6, 4,_,4,_, 5,_,5,4, 2,_,0,_], [2,_,4,_, 7,_,4,2, 0,_,2,_, 4,_,_,_], [0,_,4,_, 0,_,5,4, 0,_,4,_, 2,_,1,2]];
   const A = HOOKS[sg.seed % HOOKS.length], A2 = A.slice(0,12).concat([4,_,7,_]), B = A.map(d=> d===null ? null : d + 3), END = A.slice(0,12).concat([2,_,0,_]);
-  const mel = (sg.box ? [].concat(motif(8), motif(8), motif(8), motif(8)) : [].concat(A, A2, B, END)).map(d=> d===null ? null : deg(d));
+  const mel = sg.mel ? sg.mel : (sg.box ? [].concat(motif(8), motif(8), motif(8), motif(8)) : [].concat(A, A2, B, END)).map(d=> d===null ? null : deg(d));
   const bass = []; for (let b=0;b<4;b++){ const root = sg.root - 12 + sg.scale[sg.prog[b]%7]; bass.push(root, null, null, root, root+7, null, root+12, null); }
   const chords = sg.prog.map(p=>sg.root + sg.scale[p%7]);
   if (sg.style==='techno'){
     // Korobeiniki, Russian folk tune, on a techno piano
-    const _ = null, KM = [76,_,71,72,74,_,72,71, 69,_,69,72,76,_,74,72, 71,_,_,72,74,_,76,_, 72,_,69,_,69,_,_,_,
+    const _ = null, KM = sg.mel || [76,_,71,72,74,_,72,71, 69,_,69,72,76,_,74,72, 71,_,_,72,74,_,76,_, 72,_,69,_,69,_,_,_,
                           _,74,_,77,81,_,79,77, 76,_,_,72,76,_,74,72, 71,_,71,72,74,_,76,_, 72,_,69,_,69,_,_,_];
-    const KB = [52,57,59,57,50,48,47,57], kb = []; KB.forEach(b=>{ for (let k=0;k<8;k++) kb.push(k%2 ? b : null); });
+    const KB = sg.kb || [52,57,59,57,50,48,47,57], kb = []; KB.forEach(b=>{ for (let k=0;k<8;k++) kb.push(k%2 ? b : null); });
     return {mel:KM, bass:kb, bpm:Math.round(sg.bpm*1.1), style:'techno', chords:KB};
   }
-  return {mel, bass, bpm:sg.rbpm || Math.round(sg.bpm*1.12), drum:sg.drum, box:sg.box, style:sg.style, chords};
+  return {mel, bass, bpm:sg.rbpm || Math.round(sg.bpm*1.12), drum:sg.drum, box:sg.box, style:sg.style, chords, minor:sg.minor};
 }
 const SONG_DATA = {}; for (const k in SONGS) SONG_DATA[k] = buildSong(SONGS[k]);
 let mStep = 0, mNext = 0, mSong = 'menu';
@@ -1100,7 +1173,22 @@ function dropPulse(){ if (!AC) return 0; const now = AC.currentTime; while (DROP
 function beatPulse(){ if (!AC) return 0; const now = AC.currentTime; while (KICKS.length > 1 && KICKS[1] <= now) KICKS.shift(); const k = KICKS[0]; return k != null && k <= now ? Math.exp(-(now - k)*7) : 0; }
 function styledStep(song, i, m, b, w, step){
   const st = song.style, bar = Math.floor(i/8) % song.chords.length, ch = song.chords[bar], j = i % 8;
-  if (st==='rock'){
+  if (st==='chip'){
+    // 8-bit: square lead, fast arpeggios, triangle bass, noise drums
+    if (m){ osc(musGain, mf(m + 12), step*0.8, 'square', 0.05, w); osc(musGain, mf(m + 12)*1.005, step*0.5, 'square', 0.02, w); }
+    osc(musGain, mf(ch + [0, song.minor ? 3 : 4, 7, 12][i%4] + 12), step*0.5, 'square', 0.025, w);
+    if (b) osc(musGain, mf(b - 12), step*0.9, 'triangle', 0.2, w);
+    if (j%4===0) kick(w, 160, 0.12, 0.45, 50, step);
+    if (j%4===2) noiseAt(musGain, w, 0.08, 0.18, 2500);
+    noiseAt(musGain, w, 0.02, 0.05, 9000);
+  } else if (st==='jaws'){
+    // shark theme: two low notes that get faster and faster, staccato strings, drums on the build
+    const cyc = i % 32, fast = cyc >= 16, n = Math.floor(i/(fast ? 1 : 2)) % 2 ? 41 : 40;
+    if (fast || j%2===0){ osc(musGain, mf(n), step*0.9, 'sawtooth', 0.12, w); osc(musGain, mf(n - 12), step*0.9, 'triangle', 0.22, w); }
+    if (fast){ if (j%2===0) kick(w, 130, 0.14, 0.45, 40, step); if (j===2 || j===6) noiseAt(musGain, w, 0.12, 0.2, 1200); noiseAt(musGain, w, 0.02, 0.05, 8000);
+      if (m) osc(musGain, mf(m), step*0.5, 'sawtooth', 0.04, w); }
+    if (cyc === 0) osc(musGain, mf(ch + 12), step*8, 'sawtooth', 0.03, w);
+  } else if (st==='rock'){
     // rock: chugging power chords, kick + snare backbeat, crash every 4 bars, distorted lead
     const pc = ch - 12;
     if (j%2===0 || j===3 || j===7){ osc(musGain, mf(pc), step*0.7, 'sawtooth', 0.07, w); osc(musGain, mf(pc+7), step*0.7, 'sawtooth', 0.05, w); osc(musGain, mf(pc)*1.006, step*0.7, 'square', 0.03, w); }
@@ -1701,7 +1789,7 @@ function update(dt){
   if (banner){ banner.time += dt; if (banner.time > 1.3) banner = null; }
   if (toasts.length){ toasts[0].t += dt; if (toasts[0].t > 2.8) toasts.shift(); }
   if (bigText){ bigText.t += dt; if (bigText.t > 2.2) bigText = null; }
-  mSong = state==='attract' ? 'menu' : (L.boss && L.boss.on && !L.boss.done) ? (L.boss.k==='home' ? 'bossrock' : 'boss') : pow.geo > 0 ? (L.gd2 ? 'geo2' : 'geo') : (LEVELS[curLi].theme==='mix' ? 'mix' : L.themes[0]);
+  mSong = state==='attract' ? 'menu' : (L.boss && L.boss.on && !L.boss.done) ? (SONG_DATA['boss_' + L.boss.k] ? 'boss_' + L.boss.k : 'boss') : pow.geo > 0 ? (L.gd2 ? 'geo2' : 'geo') : (LEVELS[curLi].theme==='mix' ? 'mix' : L.themes[0]);
 }
 const BOSSES = {
   city:{n:'Falco Gigante', en:'Giant Falcon', c:'#c98a3a', c2:'#ffd23f', moves:['rain','beam','zig','rain'], vul:['dive','fake']},
@@ -2863,7 +2951,7 @@ const BG = {
         const cols = ['#ff4d6d','#3ad1ff','#ffd23f','#7ae040','#8f6bff','#ff9a3a']; for (let r2=0;r2<3;r2++) for (let q=0;q<9;q++){ if (r2===1 && q>5) break; ctx.fillStyle=cols[(q+r2*2)%6]; ctx.fillRect(x+14+q*22, 175 + r2*80 + (q%3)*3, 18, 56 - (q%3)*3); }
         ctx.fillStyle='#ffd23f'; rr(x+o.w-70, 260, 22, 30, 4); ctx.fill(); ctx.fillRect(x+o.w-64, 290, 10, 8); rr(x+o.w-72, 296, 26, 6, 2); ctx.fill(); return; }
       if (o.k==='drums'){ const hit = bp > 0.5 ? 3 : 0; ctx.fillStyle='#c0cada'; ctx.fillRect(x+12, 260, 3, 140); ctx.fillStyle='#ffd23f'; ctx.beginPath(); ctx.ellipse(x+14, 262 + hit, 26, 5, 0, 0, Math.PI*2); ctx.fill();
-        ctx.fillStyle='#e63946'; circle(x+75, 360, 42); ctx.fill(); ctx.fillStyle='#fff'; circle(x+75, 360, 32); ctx.fill(); ctx.fillStyle='#e63946'; ctx.font='800 22px '+FONT; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('EDO', x+75, 361);
+        ctx.fillStyle='#e63946'; circle(x+75, 360, 42); ctx.fill(); ctx.fillStyle='#fff'; circle(x+75, 360, 32); ctx.fill(); ctx.fillStyle='#e63946'; starPath(x+75, 360, 16, 7); ctx.fill();
         ctx.fillStyle='#e63946'; rr(x+110, 300, 40, 26, 6); ctx.fill(); ctx.fillStyle='#fff'; ctx.fillRect(x+110, 298 + hit, 40, 4); return; }
       if (o.k==='lamp'){ ctx.fillStyle='#2b2d42'; ctx.fillRect(x+33, 200, 4, 210); ctx.fillRect(x+15, 404, 40, 8); const g2 = ctx.createRadialGradient(x+35, 190, 5, x+35, 190, 90); g2.addColorStop(0, 'rgba(255,220,140,.45)'); g2.addColorStop(1, 'rgba(255,220,140,0)'); ctx.fillStyle = g2; ctx.fillRect(x-60, 100, 190, 190); ctx.fillStyle='#ffcf6a'; ctx.beginPath(); ctx.moveTo(x+12, 205); ctx.lineTo(x+58, 205); ctx.lineTo(x+48, 168); ctx.lineTo(x+22, 168); ctx.closePath(); ctx.fill(); }
     });
