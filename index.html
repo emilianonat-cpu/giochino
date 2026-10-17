@@ -374,7 +374,7 @@ function unlockedPows(li){ const s = []; for (const i of ORDER.slice(0, ORDER.in
 
 function genLevel(li){
   const LV = LEVELS[li], r = mulberry32(4242+li*101+(PRO?77:0)), R = (a,b)=>a+r()*(b-a), pick = a=>a[Math.floor(r()*a.length)];
-  const L = {cpList:[], gaunts:[], li, gd:!!LV.gd, gd2:!!LV.gd2, plats:[], items:[], obst:[], pows:[], friends:[], springs:[], boosts:[], balloons:[], haz:[], orbs:[], portals:[], hints:[], drops:[], zips:[], saws:[], rings:[], coins:[], boss:null, coinsN:0, pro:PRO, dmg: LV.baby ? 1 : (li >= 3 || PRO) ? 2 : 1, themes: LV.theme==='mix' ? MIX : [LV.theme]};
+  const L = {cpList:[], gaunts:[], spins:[], li, gd:!!LV.gd, gd2:!!LV.gd2, plats:[], items:[], obst:[], pows:[], friends:[], springs:[], boosts:[], balloons:[], haz:[], orbs:[], portals:[], hints:[], drops:[], zips:[], saws:[], rings:[], coins:[], boss:null, coinsN:0, pro:PRO, dmg: LV.baby ? 1 : (li >= 3 || PRO) ? 2 : 1, themes: LV.theme==='mix' ? MIX : [LV.theme]};
   const LVLEN = LV.length * (PRO && !LV.gd && !LV.baby ? 1.6 : 1);
   const segLen = LVLEN / L.themes.length;
   L.segLen = segLen;
@@ -551,13 +551,19 @@ function genLevel(li){
       plat(x, 520, gy); x += 520; y = gy;
     }
   };
+  // crazy lasers: they slide, blink, or move up and down
+  const crazy = (h, kind)=>{ const k = kind || pick(['slide','blink','gate']); h.mv = k; h.ph = r()*6;
+    if (k==='slide'){ h.hx = h.x; h.amp = R(60, 90); h.w2 = R(1.6, 2.4); }
+    else if (k==='blink'){ h.per = R(1.4, 1.9); }
+    else if (k==='gate'){ h.gy = h.y1 >= h.y0 + 120 ? h.y1 + 42 : h.y1 - 2; h.amp = 150; h.w2 = R(1.8, 2.4); }
+    return h; };
   // SFIDA: a long mandatory Geometry-Dash style stretch with no breaks, each beat asks for a different move; checkpoint right before
   const gauntlet = ()=>{
     const G = 400; x += R(90, 120); plat(x, 520, G); L.cpList.push({x:x + 200, g:null}); const cp = L.cpList[L.cpList.length-1]; x += 520;
     const g = {x0:x}; cp.g = g; L.gaunts.push(g);
     const se = LV.speed*1.2*(0.94 + 0.16*clamp(x/LVLEN, 0, 1)), gp = ()=>R(95, 120), gx = {gaunt:true};
-    const POOL = PRO ? ['spike','spike2','gap','dgap','dash','slide','lowL','highL','orb','jumpSlide','step'] : ['spike','gap','slide','lowL','highL','step'];
-    const n = PRO ? 8 : 6; let last = '';
+    const POOL = PRO ? ['spike','spike2','gap','dgap','dash','slide','lowL','highL','orb','jumpSlide','step','gateL','spin','press','roller','blinkL','spikeGap','spin','gateL'] : ['spike','gap','slide','lowL','highL','step'];
+    const n = PRO ? 10 : 6; let last = '';
     for (let k=0;k<n;k++){
       let b; do { b = pick(POOL); } while (b===last); last = b;
       if (b==='spike'){ x += gp(); plat(x, 440, G, gx); L.obst.push(mkObst(x + 270, G, 'spike', r)); L.items.push({x:x + 270, y:G - 110}); x += 440; }
@@ -570,6 +576,12 @@ function genLevel(li){
       else if (b==='highL'){ x += gp(); plat(x, 460, G, gx); L.haz.push({x:x + 260, w:40, y0:G - 215, y1:G - 42, k:'laser'}); L.items.push({x:x + 280, y:G - 22}); x += 460; }
       else if (b==='orb'){ const gg = R(400, 430); L.orbs.push({x:x + 175, y:G - 190, t:-9}); arc(x + 175, x + gg, G - 260, 60, 4); x += gg; plat(x, 320, G, gx); x += 320; }
       else if (b==='jumpSlide'){ x += gp(); plat(x, 860, G, gx); L.obst.push(mkObst(x + 260, G, 'spike', r)); L.haz.push({x:x + 600, w:180, y0:-300, y1:G - 40, k:'roof'}); L.items.push({x:x + 260, y:G - 110}); row(x + 620, G - 20, 3, 60); x += 860; }
+      else if (b==='gateL'){ x += gp(); plat(x, 480, G, gx); L.haz.push(crazy({x:x + 250, w:40, y0:G - 92, y1:G + 2, k:'laser'}, 'gate')); L.items.push({x:x + 270, y:G - 230}); x += 480; }
+      else if (b==='blinkL'){ x += gp(); plat(x, 620, G, gx); L.haz.push(crazy({x:x + 240, w:40, y0:G - 215, y1:G - 42, k:'laser'}, 'blink')); L.haz.push(crazy({x:x + 430, w:40, y0:G - 92, y1:G + 2, k:'laser'}, 'blink')); L.items.push({x:x + 335, y:G - 60}); x += 620; }
+      else if (b==='spin'){ x += gp(); plat(x, 520, G, gx); L.spins.push({x:x + 280, cy:G - 120, len:72, w:R(2, 2.6)*(r() < 0.5 ? 1 : -1), ph:r()*6}); L.items.push({x:x + 280, y:G - 120}); x += 520; }
+      else if (b==='press'){ x += gp(); plat(x, 560, G, gx); L.haz.push({x:x + 250, w:150, y0:-300, y1:G - 40, k:'roof', mv:'press', gy:G, ph:r()*6, w2:R(2.2, 2.8)}); row(x + 270, G - 20, 2, 60); x += 560; }
+      else if (b==='roller'){ x += gp(); plat(x, 560, G, gx); L.saws.push({x:x + 300, hx:x + 300, gy:G, r:22, ph:r()*6, w:R(1.6, 2.2), amp:120, roll:true, y:G - 24}); L.items.push({x:x + 300, y:G - 130}); x += 560; }
+      else if (b==='spikeGap'){ x += gp(); plat(x, 360, G, gx); L.obst.push(mkObst(x + 330, G, 'spike', r)); x += 360; x += 200; arc(x - 260, x, G - 110, 60, 3); plat(x, 320, G, gx); x += 320; }
       else if (b==='step'){ x += gp(); plat(x, 260, G - 90, gx); L.items.push({x:x + 130, y:G - 135}); x += 260; x += gp(); plat(x, 300, G, gx); x += 300; }
     }
     g.endX = x + 60; x += gp(); plat(x, 520, G); L.items.push({x:x + 180, y:G - 60, big:true}); x += 520; y = G;
@@ -657,7 +669,7 @@ function genLevel(li){
       else row(x+90, ny-44, 4, 52);
     }
     if (PRO && !extra.bob && pw > 460 && r() < 0.34 && !L.obst.some(o=>o.x > x && o.x < x+pw) && !L.springs.some(q=>q.x > x && q.x < x+pw)){
-      const gx = x + pw*0.55; L.haz.push({x:gx, w:40, y0:ny - 215, y1:ny - 42, k:'laser'}); L.items.push({x:gx + 20, y:ny - 22});
+      const gx = x + pw*0.55, lz = {x:gx, w:40, y0:ny - 215, y1:ny - 42, k:'laser'}; if (r() < 0.35) crazy(lz, pick(['slide','blink'])); L.haz.push(lz); L.items.push({x:gx + 20, y:ny - 22});
       if (!L.laserHint){ L.laserHint = true; L.hints.push({x:gx - 520, k:'laser'}); }
     }
     if (!LV.baby && L.coinsN < 3 && prog > [0.2, 0.48, 0.76][L.coinsN] && pw > 380 && ny >= 330){ L.coins.push({x:x + pw*0.55, y:Math.max(95, ny - 330), i:L.coinsN}); L.coinsN++; }
@@ -1638,9 +1650,23 @@ function update(dt){
   }
   if (P.ground && P.geoRot) P.geoRot = Math.round(P.geoRot/(Math.PI/2))*(Math.PI/2);
   const lasOn = lasersOn();
+  for (const h of L.haz) if (h.mv){
+    if (h.mv==='slide') h.x = h.hx + Math.sin(t*h.w2 + h.ph)*h.amp;
+    else if (h.mv==='gate'){ const o = (0.5 + 0.5*Math.sin(t*h.w2 + h.ph))*h.amp; h.y1 = h.gy + 2 - o; h.y0 = h.y1 - 94; }
+    else if (h.mv==='press') h.y1 = h.gy - 40 - (0.5 + 0.5*Math.sin(t*h.w2 + h.ph))*150;
+    else if (h.mv==='blink'){ const c = ((t + h.ph) % h.per)/h.per; h.off = c > 0.58; h.warn = c > 0.85; }
+  }
+  for (const sp of L.spins){
+    const a = t*sp.w + sp.ph, ca = Math.cos(a)*sp.len, sa = Math.sin(a)*sp.len; sp.a = a;
+    if (!lasOn || Math.abs(sp.x - P.x) > sp.len + 20 || state!=='play' || P.inv > 0) continue;
+    const top = P.y - (P.slide > 0 ? 30 : ph);
+    for (let k=0;k<=5;k++){ const py = top + (P.y - top)*k/5, ax = sp.x - ca, ay = sp.cy - sa, dx = 2*ca, dy = 2*sa;
+      const u = clamp(((P.x - ax)*dx + (py - ay)*dy)/(dx*dx + dy*dy), 0, 1);
+      if (Math.hypot(ax + dx*u - P.x, ay + dy*u - py) < 8 + hw*0.6){ hurt(1); break; } }
+  }
   for (const h of L.haz){
     if (P.x + hw < h.x || P.x - hw > h.x + h.w) continue;
-    if (h.k==='laser' && !lasOn) continue;
+    if (h.k==='laser' && (!lasOn || h.off)) continue;
     const top = P.y - (P.slide > 0 ? 30 : ph);
     if (top >= h.y1 || P.y <= h.y0) continue;
     if (!L.gd && h.y0 < 0 && P.y <= h.y1 && prevTop < h.y1 - 20) continue;
@@ -1650,7 +1676,8 @@ function update(dt){
     } else if (state==='play' && P.inv <= 0) hurt(h.k==='laser' ? 1 : L.dmg);
   }
   for (const s of L.saws){
-    s.y = s.gy - 36 - (0.5 + 0.5*Math.sin(t*s.w + s.ph))*180;
+    if (s.roll){ s.x = s.hx + Math.sin(t*s.w + s.ph)*s.amp; s.y = s.gy - s.r - 2; }
+    else s.y = s.gy - 36 - (0.5 + 0.5*Math.sin(t*s.w + s.ph))*180;
     if (Math.abs(s.x - P.x) > 60) continue;
     const top = P.y - (P.slide > 0 ? 30 : ph), cyy = clamp(s.y, top, P.y);
     if (Math.hypot(s.x - P.x, s.y - cyy) < s.r + hw - 2 && state==='play' && P.inv <= 0) hurt(L.dmg);
@@ -3310,7 +3337,9 @@ function drawHaz(h, st){
     return;
   }
   if (h.k==='laser'){
-    const on = state==='thumb' || lasersOn() ? 0.65 + 0.35*Math.sin(t*22 + h.x) : 0.08;
+    const on = h.off ? (h.warn && Math.floor(t*20)%2 ? 0.35 : 0.05) : state==='thumb' || lasersOn() ? 0.65 + 0.35*Math.sin(t*22 + h.x) : 0.08;
+    if (h.mv==='slide'){ ctx.strokeStyle = 'rgba(255,255,255,.25)'; ctx.lineWidth = 3; ctx.setLineDash([8, 8]); ctx.beginPath(); ctx.moveTo(h.hx - h.amp - camX, h.y0 - 6); ctx.lineTo(h.hx + h.amp + 40 - camX, h.y0 - 6); ctx.stroke(); ctx.setLineDash([]); }
+    if (h.mv==='gate'){ ctx.strokeStyle = 'rgba(255,255,255,.25)'; ctx.lineWidth = 3; ctx.setLineDash([8, 8]); ctx.beginPath(); ctx.moveTo(sx + h.w/2, h.gy - h.amp - 100); ctx.lineTo(sx + h.w/2, h.gy); ctx.stroke(); ctx.setLineDash([]); }
     ctx.save(); ctx.globalCompositeOperation = 'lighter';
     for (let k=0;k<3;k++){ const lx = sx + 8 + k*12;
       ctx.strokeStyle = 'rgba(255,60,150,' + (0.4*on).toFixed(2) + ')'; ctx.lineWidth = 10; ctx.beginPath(); ctx.moveTo(lx, h.y0); ctx.lineTo(lx, h.y1); ctx.stroke();
@@ -3420,11 +3449,17 @@ function drawWorld(st){
     ctx.fillStyle = '#4a3b2a'; ctx.fillRect(a - 5, z.y0 - 20, 10, 40); ctx.fillRect(b - 5, z.y1 - 20, 10, 40);
     ctx.strokeStyle = '#222'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(a, z.y0); ctx.lineTo(b, z.y1); ctx.stroke();
     ctx.strokeStyle = '#ffd23f'; ctx.lineWidth = 1.5; ctx.stroke(); }
-  for (const s of L.saws){ const sx = s.x - camX; if (sx < -60 || sx > VW + 60) continue;
-    ctx.strokeStyle = 'rgba(0,0,0,.45)'; ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(sx, s.gy - 36); ctx.lineTo(sx, s.gy - 216); ctx.stroke();
+  for (const s of L.saws){ const sx = s.x - camX; if (sx < -200 || sx > VW + 200) continue;
+    ctx.strokeStyle = 'rgba(0,0,0,.45)'; ctx.lineWidth = 6; ctx.beginPath(); if (s.roll){ ctx.moveTo(s.hx - s.amp - camX, s.gy - 3); ctx.lineTo(s.hx + s.amp - camX, s.gy - 3); } else { ctx.moveTo(sx, s.gy - 36); ctx.lineTo(sx, s.gy - 216); } ctx.stroke();
     ctx.save(); ctx.translate(sx, s.y); ctx.rotate(t*12); ctx.fillStyle = '#d9dde8'; ctx.beginPath();
     for (let k=0;k<24;k++){ const a = k/24*Math.PI*2, rr2 = k%2 ? s.r - 6 : s.r + 3; ctx.lineTo(Math.cos(a)*rr2, Math.sin(a)*rr2); }
     ctx.closePath(); ctx.fill(); ctx.strokeStyle = '#ff4d6d'; ctx.lineWidth = 2; ctx.stroke(); ctx.fillStyle = '#555'; circle(0, 0, 6); ctx.fill(); ctx.restore(); }
+  for (const sp of L.spins){ const sx = sp.x - camX; if (sx < -120 || sx > VW + 120) continue; const a = sp.a || 0, ca = Math.cos(a)*sp.len, sa = Math.sin(a)*sp.len, on = lasersOn() || state==='thumb';
+    ctx.strokeStyle = '#3a2d55'; ctx.lineWidth = 8; ctx.beginPath(); ctx.moveTo(sx, sp.cy); ctx.lineTo(sx, sp.cy - 300); ctx.stroke();
+    ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = on ? 1 : 0.15; ctx.lineCap = 'round';
+    ctx.strokeStyle = 'rgba(0,230,255,.45)'; ctx.lineWidth = 14; ctx.beginPath(); ctx.moveTo(sx - ca, sp.cy - sa); ctx.lineTo(sx + ca, sp.cy + sa); ctx.stroke();
+    ctx.strokeStyle = '#e6fdff'; ctx.lineWidth = 4; ctx.stroke(); ctx.restore();
+    ctx.fillStyle = '#3a2d55'; circle(sx, sp.cy, 12); ctx.fill(); ctx.fillStyle = Math.floor(t*8)%2 ? '#3ad1ff' : '#ff4d8d'; circle(sx, sp.cy, 5); ctx.fill(); }
   for (const d of L.drops){ if (d.done) continue; const sx = d.x - camX; if (sx < -60 || sx > VW + 60) continue;
     if (!d.falling){ ctx.strokeStyle = 'rgba(255,255,255,.7)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(sx, -10); ctx.lineTo(sx, d.y - 36); ctx.stroke(); }
     else { ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.beginPath(); ctx.ellipse(sx, d.gy + 2, 20, 5, 0, 0, Math.PI*2); ctx.fill(); }
