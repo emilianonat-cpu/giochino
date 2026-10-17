@@ -306,7 +306,10 @@ const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
 const SKINS = ['#f7d7bd','#e8b88a','#c68a5c','#a86b43','#7a4a2c'];
 const HAIRC = ['#3b2416','#17171c','#a0522d','#e2b64e','#ff7eb6','#3a86ff'];
 const COLORS = ['#ff6b4a','#3a86ff','#22b8a7','#ffbe0b','#8f6bff','#ff5fa2','#2b2d42','#f4f4f4'];
-const OUTFITS = [{id:'tee',cost:0},{id:'soccer',cost:0},{id:'hero',cost:250},{id:'pirate',cost:400},{id:'astro',cost:600},{id:'dino',cost:900},{id:'ninja',cost:0,coins:3},{id:'racer',cost:0,coins:6},{id:'builder',cost:0,coins:9},{id:'pianist',cost:0,coins:12},{id:'gdcube',cost:0,coins:15},{id:'robot',cost:0,coins:18},{id:'gold',cost:0,coins:21}];
+const OUTFITS = [{id:'tee',cost:0},{id:'soccer',cost:0},{id:'hero',cost:250},{id:'pirate',cost:400},{id:'astro',cost:600},{id:'dino',cost:900},{id:'ninja',cost:0,coins:3,pw:'🥷 Triplo salto · Triple jump'},{id:'racer',cost:0,coins:6,pw:'🏎️ DASH più lungo · Super dash'},{id:'builder',cost:0,coins:9,pw:'👷 Il casco para il primo colpo · Helmet blocks 1 hit'},{id:'pianist',cost:0,coins:12,pw:'🎹 Calamita per le stelle · Star magnet'},{id:'gdcube',cost:0,coins:15,pw:'🟦 In Geometria il primo errore non conta · 1 free crash'},{id:'robot',cost:0,coins:18,pw:'🤖 Un cuore in più · Extra heart'},{id:'gold',cost:0,coins:21,pw:'👑 Stelle doppie · Double stars'}];
+// coin skins give a power while you wear them
+const skill = id=> OUTFITS[AV.outfit] && OUTFITS[AV.outfit].id === id;
+const maxHearts = ()=> skill('robot') ? 4 : 3;
 const HATS = [{id:'none',cost:0},{id:'cap',cost:0},{id:'glasses',cost:0},{id:'phones',cost:200},{id:'sun',cost:150},{id:'crown',cost:500}];
 const PETS = [{id:'none',cost:0},{id:'dog',cost:0,hidden:true},{id:'cat',cost:0},{id:'falcon',cost:300},{id:'camel',cost:450},{id:'pony',cost:450},{id:'dino',cost:800}];
 let AV = Object.assign({kind:0, skin:1, hair:0, hairC:0, outfit:0, color:0, hat:0, pet:0, name:''}, store.get('corri3-avatar', {}));
@@ -793,7 +796,7 @@ function startLevel(li, attract){
   viewFlip = 1; viewMir = 1; hint = null; M = null; toasts = []; bigText = null; L.newMedals = []; L.hitsTaken = 0; L.coinRun = 0; L.cpHit = false;
   pet = {x:-60, y:400, vy:0, hop:0};
   count = 0; combo = 0; pianoIdx = 0; parts = []; bubbles = []; pops = []; banner = null; levelT = 0; doneT = 0; flash = 0; lastStyle = 'n';
-  hearts = 3; cpCount = 0; cpReached = false; holding = false;
+  hearts = maxHearts(); cpCount = 0; cpReached = false; holding = false;
   camX = P.x - VW*0.3;
   state = attract ? 'attract' : 'intro';
 }
@@ -1080,7 +1083,7 @@ async function recordSlot(k, btn, onDone){
 }
 
 // ---------- gameplay ----------
-const maxJumps = ()=> (LEVELS[curLi].baby || pow.geo > 0) ? 0 : 1;
+const maxJumps = ()=> (LEVELS[curLi].baby || pow.geo > 0) ? 0 : skill('ninja') ? 2 : 1;
 let gdAttempt = 1, hint = null, mcNeed = false;
 const HINTS = {
   slide:['⬇ Scivola! Usa il tasto giù', '⬇ Slide! Use the down button'],
@@ -1108,7 +1111,7 @@ function dashPress(){
   if (state!=='play' || countdown > 0 || pow.fly > 0 || pow.truck > 0 || P.ship || P.zip || LEVELS[curLi].baby || L.gd) return;
   if (P.dashT > 0 || (!P.ground && !P.dashOK)) return;
   if (!P.ground) P.dashOK = false;
-  P.dashT = 0.22; P.slide = 0; if (!P.ground) P.vy = Math.min(P.vy, 0) * 0.2; if (pow.shoes > 0) P.dashOK = true;
+  P.dashT = skill('racer') ? 0.34 : 0.22; P.slide = 0; if (!P.ground) P.vy = Math.min(P.vy, 0) * 0.2; if (pow.shoes > 0) P.dashOK = true;
   shake = 5; flash = Math.max(flash, 0.08); P.dashN = (P.dashN||0) + 1;
   sfx.dash(); pop('DASH!', '#ff9ef0'); burst(P.x - 10, P.y - 30, 10, 200, ['#ff9ef0','#fff','#3ad1ff']);
 }
@@ -1175,6 +1178,10 @@ function burst(x,y,n,spd,cols){ cols = cols || ['#ffd23f','#ff6b4a','#fff','#22b
 function cubes(x,y,n,cols){ for (let i=0;i<n;i++) parts.push({x, y, vx:(Math.random()-0.3)*420, vy:-Math.random()*520, life:0.8, max:0.8, c:cols[i%cols.length], sz:7, k:'cube'}); }
 function pop(text, col){ pops.push({x:P.x, y:P.y-100, text, life:1.1, col:col||'#ffd23f'}); }
 function hurt(dmg){
+  if (state==='play' && !L.shield && ((skill('builder') && !L.gd) || (skill('gdcube') && L.gd))){
+    L.shield = true; P.inv = 1.6; shake = 6; sfx.block ? sfx.block() : sfx.smash(); burst(P.x, P.y - 40, 16, 240, ['#ffd23f','#fff','#3ad1ff']);
+    pops.push({x:P.x, y:P.y - 110, text:skill('builder') ? 'Casco! 👷 Salvo!' : 'Scudo! 🟦 Salvo!', life:1.2, col:'#ffd23f'}); return;
+  }
   dmg = dmg || 1; L.hitsTaken = (L.hitsTaken||0) + 1; hearts = L.gd ? 0 : Math.max(0, hearts - dmg); if (dmg > 1 && !L.gd) pops.push({x:P.x, y:P.y - 110, text:'-' + dmg + ' ♥', life:1, col:'#ff4d6d'}); P.inv = 1.6; sfx.hurt(); shake = 7; if (!say('ouch')) VOX.ow();
   if (L.gd){ burst(P.x, P.y - 20, 22, 320, [COLORS[AV.color], '#fff']); }
   if (hearts <= 0){ state = 'oops'; oopsT = 0; sfx.oops(); }
@@ -1186,7 +1193,7 @@ function respawnFromCheckpoint(){
   if (L.gd) pow.geo = 1e9;
   const p = platUnder(x0) || L.plats[0];
   P = freshPlayer(x0, p.y); P.inv = 1.5;
-  hearts = 3; count = L.cpHit ? L.cpCount : 0; combo = 0; L.coinRun = L.cpHit ? L.cpCoin : 0; bigText = null; saveProg();
+  hearts = maxHearts(); L.shield = false; count = L.cpHit ? L.cpCount : 0; combo = 0; L.coinRun = L.cpHit ? L.cpCoin : 0; bigText = null; saveProg();
   if (L.cpHit) pops.push({x:P.x + 120, y:P.y - 110, text:'Dal checkpoint! 🚩', life:1.4, col:'#7ae040'});
   for (const rg of L.rings) if (rg.x > x0){ rg.done = false; rg.ok = false; }
   for (const c of L.coins) if (c.x > x0) c.taken = false;
@@ -1211,7 +1218,7 @@ function smashObst(o, ox, oy, kind){
 }
 const COMBO_WORDS = ['Nice!','Great!','Awesome!','Super!','Amazing!','Fantastic!','WOW!','Yalla!','Cool!','Bravo!'];
 function collectItem(it){
-  it.taken = true; const v = ((pow.piano>0 || pow.lego>0) ? 2 : 1) * (it.big ? 5 : 1); count += v; hudBump = 1; sfx.collect(); combo++; comboT = 1.3;
+  it.taken = true; const v = ((pow.piano>0 || pow.lego>0) ? 2 : 1) * (it.big ? 5 : 1) * (skill('gold') ? 2 : 1); count += v; hudBump = 1; sfx.collect(); combo++; comboT = 1.3;
   if (it.big){ VOX.giggle(); burst(it.x, it.y, 14, 220); pops.push({x:it.x, y:it.y - 30, text:'+' + v, life:1, col:'#ffd23f'}); }
   for (let i=0;i<6;i++){ const a=i/6*Math.PI*2; parts.push({x:it.x, y:it.y, vx:Math.cos(a)*160, vy:Math.sin(a)*160, life:0.4, max:0.4, c:'#ffe27a', sz:4, k:'spark'}); }
   if (pow.piano>0) parts.push({x:it.x, y:it.y, vx:0, vy:-90, life:1, max:1, c:'#fff', sz:26, k:'note'});
@@ -1277,7 +1284,7 @@ function update(dt){
   if (P.buf > 0){ if (doJump()) P.buf = 0; else P.buf -= dt; }
 
   const hw = truck ? 34 : 10, ph = truck ? 72 : (LV.baby ? 40 : 60);
-  const prevX = P.x; P.x += (sp + (P.dashT > 0 ? 700 : 0))*dt;
+  const prevX = P.x; P.x += (sp + (P.dashT > 0 ? (skill('racer') ? 820 : 700) : 0))*dt;
   if (P.dashT > 0){ (P.ghosts = P.ghosts || []).push({x:P.x, y:P.y, life:0.28}); }
   if (P.ghosts){ for (const g of P.ghosts) g.life -= dt; P.ghosts = P.ghosts.filter(g=>g.life > 0); }
   if (P.dashT > 0 && Math.random() < 0.9) parts.push({x:P.x - 10, y:P.y - 10 - Math.random()*45, vx:-300, vy:0, life:0.25, max:0.25, c:'rgba(255,158,240,.8)', sz:30 + Math.random()*30, k:'line'});
@@ -1444,7 +1451,7 @@ function update(dt){
     for (const it of L.items){ if (!it.taken && Math.abs(it.x - pet.x) < 34 && Math.abs(it.y - (pet.y-20)) < 50) collectItem(it); }
   }
   const cx = P.x, cy = P.y - ph/2, rad = truck ? 52 : 36;
-  const mr = 175;
+  const mr = skill('pianist') ? 340 : 175;
   for (const it of L.items){
     if (it.taken) continue;
     const dx = it.x - cx, dy = it.y - cy;
@@ -3278,7 +3285,7 @@ function drawHUD(){
   PAUSE_BTN.x = VW - 52;
   if (P.boost > 0){ ctx.save(); ctx.globalAlpha = Math.min(1, P.boost)*0.35; const vg = ctx.createRadialGradient(VW/2, VH/2, VH*0.3, VW/2, VH/2, VW*0.7); vg.addColorStop(0, 'rgba(58,209,255,0)'); vg.addColorStop(1, '#3ad1ff'); ctx.fillStyle = vg; ctx.fillRect(0, 0, VW, VH); ctx.restore(); }
   ctx.fillStyle='rgba(20,12,50,.5)'; rr(14,14,300,56,28); ctx.fill();
-  for (let i=0;i<(L.gd ? 1 : 3);i++) heart(42+i*34, 45, 1.25, i < hearts);
+  for (let i=0;i<(L.gd ? 1 : maxHearts());i++) heart(42+i*30, 45, 1.15, i < hearts);
   drawItemT('star', 158, 42, 0.95, 1);
   ctx.fillStyle = hudBump > 0 ? '#ffe27a' : '#fff'; ctx.font='800 '+Math.round(32*(1 + hudBump*0.3))+'px '+FONT; ctx.textAlign='left'; ctx.textBaseline='middle'; ctx.fillText(String(count), 180, 45);
   if (L.goals && !LEVELS[curLi].type){ const ng = L.goals.findIndex(v=>count < v), cw = ctx.measureText(String(count)).width; ctx.font='800 16px '+FONT; ctx.fillStyle = 'rgba(255,255,255,.75)'; ctx.fillText(ng < 0 ? '★★★' : '/' + L.goals[ng] + ' ' + '★'.repeat(ng+1), 184 + cw, 50); }
@@ -3912,7 +3919,7 @@ function optRow(list, key, cat, paint){
     if (locked){ const s = document.createElement('span'); s.className = 'cost' + (it.coins ? ' coin' : ''); s.textContent = it.coins ? '🪙 ' + it.coins : '★ ' + it.cost; b.appendChild(s); }
     b.onclick = ()=>{
       if (cat && !hasItem(cat, i, list)){
-        if (it.coins){ b.animate([{transform:'translateX(0)'},{transform:'translateX(-6px)'},{transform:'translateX(6px)'},{transform:'translateX(0)'}], {duration:250}); const nt = document.getElementById('coinNote'); if (nt) nt.textContent = '🪙 Servono ' + it.coins + ' monete segrete (ne hai ' + coinTotal() + '). Cercale nei livelli! · Find secret coins!'; return; }
+        if (it.coins){ b.animate([{transform:'translateX(0)'},{transform:'translateX(-6px)'},{transform:'translateX(6px)'},{transform:'translateX(0)'}], {duration:250}); const nt = document.getElementById('coinNote'); if (nt) nt.textContent = it.pw + ' · servono ' + it.coins + ' monete segrete (ne hai ' + coinTotal() + '). Cercale nei livelli!'; return; }
         if (bank >= it.cost){ bank -= it.cost; store.set('corri3-bank', bank); owned.add(cat+':'+i); store.set('corri3-owned', [...owned]); sfx.power(); updBank(); }
         else { b.animate([{transform:'translateX(0)'},{transform:'translateX(-6px)'},{transform:'translateX(6px)'},{transform:'translateX(0)'}], {duration:250}); return; }
       }
@@ -3935,7 +3942,7 @@ function renderPanel(){
   } else if (curTab==='outfit'){
     pn.appendChild(optRow(OUTFITS, 'outfit', 'outfit', i=>{ ctx.setTransform(1.6,0,0,1.6,62,122); drawFig(Object.assign({}, AV, {outfit:i}), {run:0, air:false, sq:1}); }));
     pn.appendChild(swRow(COLORS.slice(0,7), 'color', 'Colore'));
-    const cn = document.createElement('div'); cn.className = 'note'; cn.id = 'coinNote'; cn.textContent = '🪙 ' + coinTotal() + '/' + COIN_TOTAL + ' monete segrete · le skin con 🪙 si sbloccano trovando le monete nascoste nei livelli'; pn.appendChild(cn);
+    const cn = document.createElement('div'); cn.className = 'note'; cn.id = 'coinNote'; const cur = OUTFITS[AV.outfit]; cn.textContent = (cur.pw ? 'Potere: ' + cur.pw + '  ·  ' : '') + '🪙 ' + coinTotal() + '/' + COIN_TOTAL + ' monete segrete · le skin con 🪙 hanno un potere speciale!'; pn.appendChild(cn);
   } else if (curTab==='hat'){
     pn.appendChild(optRow(HATS, 'hat', 'hat', i=>{ ctx.setTransform(2.6,0,0,2.6,60,200); drawHead(Object.assign({}, AV, {hat:i, outfit: OUTFITS[AV.outfit].id==='astro' || OUTFITS[AV.outfit].id==='dino' ? 0 : AV.outfit}), 2, -53); if (i===0){ ctx.setTransform(1,0,0,1,0,0); ctx.strokeStyle='rgba(255,255,255,.8)'; ctx.lineWidth=8; ctx.beginPath(); ctx.moveTo(90,20); ctx.lineTo(118,48); ctx.moveTo(118,20); ctx.lineTo(90,48); ctx.stroke(); } }));
   } else if (curTab==='pet'){
