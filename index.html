@@ -181,6 +181,13 @@ h2 .en{font-size:.72em}
   <div class="levels" id="levels"></div>
 </div>
 
+<div id="buy" class="overlay dim" hidden style="z-index:50;background:rgba(20,12,50,.94)">
+  <h2 id="buyName"></h2>
+  <canvas id="buyCv" width="200" height="200" style="width:min(200px,38vh);height:min(200px,38vh)"></canvas>
+  <div class="sub" id="buyPow"></div>
+  <div class="sub" id="buyCost"></div>
+  <div class="row"><button class="pill" id="buyYes">Sblocca! <span class="en">Unlock</span></button><button class="pill alt" id="buyNo">No, grazie</button></div>
+</div>
 <div id="custom" class="overlay dim" hidden>
   <button class="btn corner l" id="custBack" aria-label="Fatto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4l-8 8 8 8"/></svg></button>
   <div class="bank" id="custBank">★ 0</div>
@@ -306,10 +313,10 @@ const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
 const SKINS = ['#f7d7bd','#e8b88a','#c68a5c','#a86b43','#7a4a2c'];
 const HAIRC = ['#3b2416','#17171c','#a0522d','#e2b64e','#ff7eb6','#3a86ff'];
 const COLORS = ['#ff6b4a','#3a86ff','#22b8a7','#ffbe0b','#8f6bff','#ff5fa2','#2b2d42','#f4f4f4'];
-const OUTFITS = [{id:'tee',cost:0},{id:'soccer',cost:0},{id:'hero',cost:250},{id:'pirate',cost:400},{id:'astro',cost:600},{id:'dino',cost:900},{id:'ninja',cost:0,coins:3,pw:'🥷 Triplo salto · Triple jump'},{id:'racer',cost:0,coins:6,pw:'🏎️ DASH più lungo · Super dash'},{id:'builder',cost:0,coins:9,pw:'👷 Il casco para il primo colpo · Helmet blocks 1 hit'},{id:'pianist',cost:0,coins:12,pw:'🎹 Calamita per le stelle · Star magnet'},{id:'gdcube',cost:0,coins:15,pw:'🟦 In Geometria il primo errore non conta · 1 free crash'},{id:'robot',cost:0,coins:18,pw:'🤖 Un cuore in più · Extra heart'},{id:'gold',cost:0,coins:21,pw:'👑 Stelle doppie · Double stars'}];
+const OUTFITS = [{id:'tee',cost:0},{id:'soccer',cost:0},{id:'hero',cost:250},{id:'pirate',cost:400},{id:'astro',cost:600},{id:'dino',cost:900},{id:'ninja',cost:0,coins:3,pw:'🥷 DASH fantasma: passi attraverso tutto'},{id:'racer',cost:0,coins:6,pw:'🏎️ 15 stelle = TURBO di fuoco 🔥'},{id:'builder',cost:0,coins:9,pw:'👷 Ponti automatici sui buchi'},{id:'pianist',cost:0,coins:12,pw:'🎹 Tasto magico in aria: risalti!'},{id:'gdcube',cost:0,coins:15,pw:'🟦 Cadi sulle punte? Rimbalzi!'},{id:'robot',cost:0,coins:18,pw:'🤖 Tieni premuto in aria: razzi!'},{id:'gold',cost:0,coins:21,pw:'👑 Ti colpiscono? Diventa oro!'}];
 // coin skins give a power while you wear them
 const skill = id=> OUTFITS[AV.outfit] && OUTFITS[AV.outfit].id === id;
-const maxHearts = ()=> skill('robot') ? 4 : 3;
+const maxHearts = ()=> 3;
 const HATS = [{id:'none',cost:0},{id:'cap',cost:0},{id:'glasses',cost:0},{id:'phones',cost:200},{id:'sun',cost:150},{id:'crown',cost:500}];
 const PETS = [{id:'none',cost:0},{id:'dog',cost:0,hidden:true},{id:'cat',cost:0},{id:'falcon',cost:300},{id:'camel',cost:450},{id:'pony',cost:450},{id:'dino',cost:800}];
 let AV = Object.assign({kind:0, skin:1, hair:0, hairC:0, outfit:0, color:0, hat:0, pet:0, name:''}, store.get('corri3-avatar', {}));
@@ -323,13 +330,13 @@ try { const h = decodeURIComponent(location.hash.slice(1)).replace(/[^A-Za-z]/g,
 
 // ---------- levels ----------
 const POWERS = {
-  shoes:{dur:10, name:'Scarpe a molla', en:'Pogo shoes', hint:'Rimbalzi da solo sempre più in alto, schiacci tutto e DASH infinito!', enHint:'Auto-bounce, stomp everything, endless DASH!'},
-  lego:{dur:12, name:'Mattoncini LEGO', en:'LEGO world', hint:'Tocca per costruire una scaletta e salire sulle torri! Le stelle valgono doppio.', enHint:'Tap to stack bricks and climb the towers!'},
-  blocks:{dur:12, name:'Mondo Minecraft', en:'Minecraft world', hint:'Tutto diventa a cubetti! Costruisci ponti e rompi gli ostacoli.', enHint:'Build bridges and smash blocks!'},
-  truck:{dur:8, name:'Monster truck', en:'Monster truck', hint:'Sfonda tutti gli ostacoli!', enHint:'Crush everything!'},
-  piano:{dur:12, name:'Pianola magica', en:'Magic piano', hint:'Fa apparire i tasti per attraversare!', enHint:'Play the keys to cross!'},
-  fly:{dur:7, name:'Super volo', en:'Super flight', hint:'Tieni premuto il dito per volare!', enHint:'Hold your finger to fly!'},
-  geo:{dur:10, name:'Geometry Dash', en:'Geometry Dash', hint:'Diventi un cubo velocissimo! Salta le punte e tieni premuto per saltare di continuo.', enHint:'Jump over the spikes!', style:'rave', rbpm:152}
+  shoes:{dur:10, name:'Scarpe a molla', en:'Pogo shoes', hint:'Rimbalzi altissimo e schiacci tutto!', enHint:'Bounce high, stomp all!'},
+  lego:{dur:12, name:'Mattoncini LEGO', en:'LEGO world', hint:'Tocca: costruisci una scala!', enHint:'Tap to build stairs!'},
+  blocks:{dur:12, name:'Mondo Minecraft', en:'Minecraft world', hint:'Tocca: costruisci ponti!', enHint:'Tap to build bridges!'},
+  truck:{dur:8, name:'Monster truck', en:'Monster truck', hint:'Sfonda tutto!', enHint:'Crush everything!'},
+  piano:{dur:12, name:'Pianola magica', en:'Magic piano', hint:'Suona la canzone! Tocca in aria: scala arcobaleno 🌈', enHint:'Play the song! Tap in the air: rainbow stairs'},
+  fly:{dur:7, name:'Super volo', en:'Super flight', hint:'Tieni premuto: voli!', enHint:'Hold to fly!'},
+  geo:{dur:10, name:'Geometry Dash', en:'Geometry Dash', hint:'Sei un cubo! Salta le punte!', enHint:'You\'re a cube! Jump the spikes!', style:'rave', rbpm:152}
 };
 const LEVELS = [
   {name:'Abu Dhabi', theme:'city', pow:'shoes', speed:305, length:10400},
@@ -795,7 +802,7 @@ function startLevel(li, attract){
   if (L.gd){ pow.geo = 1e9; gdAttempt = 1; }
   viewFlip = 1; viewMir = 1; hint = null; M = null; toasts = []; bigText = null; L.newMedals = []; L.hitsTaken = 0; L.coinRun = 0; L.cpHit = false;
   pet = {x:-60, y:400, vy:0, hop:0};
-  count = 0; combo = 0; pianoIdx = 0; parts = []; bubbles = []; pops = []; banner = null; levelT = 0; doneT = 0; flash = 0; lastStyle = 'n';
+  count = 0; combo = 0; pianoIdx = 0; pianoSong = 0; parts = []; bubbles = []; pops = []; banner = null; levelT = 0; doneT = 0; flash = 0; lastStyle = 'n';
   hearts = maxHearts(); cpCount = 0; cpReached = false; holding = false;
   camX = P.x - VW*0.3;
   state = attract ? 'attract' : 'intro';
@@ -840,10 +847,26 @@ function noise(d, v, hp){ if (quiet()) return; noiseAt(sfxGain, AC.currentTime, 
 function pianoKey(m, when=0){ tone(mf(m), 0.6, 'triangle', 0.3, when); tone(mf(m)*2, 0.35, 'sine', 0.07, when); }
 const FRA = [60,62,64,60,60,62,64,60,64,65,67,64,65,67,67,69,67,65,64,60,67,69,67,65,64,60,60,55,60,60,55,60].map(m=>m+12);
 const PENTA = [72,74,76,79,81,84,86,88];
+// Pianola magica: every star / jump / key plays the next note of a real song; finish the song for a bonus
+const PIANO_SONGS = [
+  {n:'Fra Martino', en:'Brother John', m:FRA},
+  {n:'Twinkle Twinkle', en:'Little Star', m:[60,60,67,67,69,69,67,65,65,64,64,62,62,60,67,67,65,65,64,64,62,67,67,65,65,64,64,62,60,60,67,67,69,69,67,65,65,64,64,62,62,60].map(x=>x+12)},
+  {n:'Inno alla gioia', en:'Ode to Joy', m:[64,64,65,67,67,65,64,62,60,60,62,64,64,62,62,64,64,65,67,67,65,64,62,60,60,62,64,62,60,60].map(x=>x+12)},
+  {n:'Tanti auguri', en:'Happy Birthday', m:[60,60,62,60,65,64,60,60,62,60,67,65,60,60,72,69,65,64,62,70,70,69,65,67,65].map(x=>x+12)}
+];
+let pianoSong = 0;
+function pianoNext(){
+  const sg = PIANO_SONGS[pianoSong % PIANO_SONGS.length];
+  pianoKey(sg.m[pianoIdx % sg.m.length]); pianoIdx++;
+  if (pianoIdx >= sg.m.length && state==='play'){
+    pianoIdx = 0; pianoSong++; count += 20; hudBump = 1; for (let i=0;i<40;i++) confetti(); sfx.fanfare();
+    bigText = {a:'Hai suonato ' + sg.n + '! 🎹', b:'You played ' + sg.en + '! +20', t:0, col:'#ffd23f'};
+  }
+}
 const sfx = {
   jump(){ tone(380,0.13,'square',0.06,0,700); },
   jump2(){ tone(520,0.16,'square',0.07,0,1150); },
-  collect(){ if (pow.piano>0){ pianoKey(FRA[pianoIdx++%FRA.length]); return; } const m = PENTA[Math.min(combo,PENTA.length-1)]; tone(mf(m),0.18,'triangle',0.2); tone(mf(m+12),0.12,'sine',0.05,0.03); },
+  collect(){ if (pow.piano>0){ pianoNext(); return; } const m = PENTA[Math.min(combo,PENTA.length-1)]; tone(mf(m),0.18,'triangle',0.2); tone(mf(m+12),0.12,'sine',0.05,0.03); },
   power(){ [0,4,7,12,16].forEach((s,i)=>tone(mf(67+s),0.18,'square',0.06,i*0.06)); },
   hurt(){ tone(300,0.3,'square',0.08,0,120); },
   smash(){ noise(0.3, 0.3); tone(110,0.25,'sawtooth',0.1,0,50); },
@@ -1083,7 +1106,7 @@ async function recordSlot(k, btn, onDone){
 }
 
 // ---------- gameplay ----------
-const maxJumps = ()=> (LEVELS[curLi].baby || pow.geo > 0) ? 0 : skill('ninja') ? 2 : 1;
+const maxJumps = ()=> (LEVELS[curLi].baby || pow.geo > 0) ? 0 : 1;
 let gdAttempt = 1, hint = null, mcNeed = false;
 const HINTS = {
   slide:['⬇ Scivola! Usa il tasto giù', '⬇ Slide! Use the down button'],
@@ -1111,7 +1134,8 @@ function dashPress(){
   if (state!=='play' || countdown > 0 || pow.fly > 0 || pow.truck > 0 || P.ship || P.zip || LEVELS[curLi].baby || L.gd) return;
   if (P.dashT > 0 || (!P.ground && !P.dashOK)) return;
   if (!P.ground) P.dashOK = false;
-  P.dashT = skill('racer') ? 0.34 : 0.22; P.slide = 0; if (!P.ground) P.vy = Math.min(P.vy, 0) * 0.2; if (pow.shoes > 0) P.dashOK = true;
+  P.dashT = 0.22; P.slide = 0;
+  if (skill('ninja')){ for (let i=0;i<14;i++) parts.push({x:P.x, y:P.y - 30 + (Math.random()-0.5)*50, vx:(Math.random()-0.5)*200, vy:-Math.random()*120, life:0.6, max:0.6, c:'rgba(180,180,210,.85)', sz:10 + Math.random()*10, k:'dot'}); if (!P.ground || platUnder(P.x + 110)) P.x += 110; for (let i=0;i<10;i++) parts.push({x:P.x, y:P.y - 30 + (Math.random()-0.5)*50, vx:(Math.random()-0.5)*160, vy:-Math.random()*100, life:0.5, max:0.5, c:'rgba(120,120,160,.8)', sz:9 + Math.random()*8, k:'dot'}); } if (!P.ground) P.vy = Math.min(P.vy, 0) * 0.2; if (pow.shoes > 0) P.dashOK = true;
   shake = 5; flash = Math.max(flash, 0.08); P.dashN = (P.dashN||0) + 1;
   sfx.dash(); pop('DASH!', '#ff9ef0'); burst(P.x - 10, P.y - 30, 10, 200, ['#ff9ef0','#fff','#3ad1ff']);
 }
@@ -1162,25 +1186,39 @@ function doJump(){
   if (P.ground || P.coyote > 0){
     P.slide = 0;
     P.vy = truck ? -880 : pow.geo > 0 ? -880 : baby ? -860 : -900; P.ground = false; P.on = null; P.coyote = 0; P.jumps = maxJumps(); P.holdT = 0; P.sq = 1.1;
-    sfx.jump(); if (pow.piano>0) pianoKey(FRA[pianoIdx++%FRA.length]); else if (state==='play' && Math.random() < 0.3) VOX.hop();
+    P.keyUsed = false; sfx.jump(); if (pow.piano>0) pianoNext(); else if (skill('pianist')) pianoKey(PENTA[(P.noteI = ((P.noteI||0) + 1)) % PENTA.length]); else if (state==='play' && Math.random() < 0.3) VOX.hop();
     dust(P.x, P.y, 5); return true;
   }
   if (P.jumps > 0){
     const front = P.jumps > 1; P.jumps--; P.vy = -830; P.spin = front ? 0.001 : -0.001; P.holdT = 0; sfx.jump2(); if (Math.random() < 0.4) pop(front ? 'Front flip!' : 'Backflip!', '#ff9ef0');
-    if (pow.piano>0) pianoKey(FRA[pianoIdx++%FRA.length]);
+    if (pow.piano>0) pianoNext();
     for (let i=0;i<10;i++) parts.push({x:P.x, y:P.y-10, vx:(Math.random()-0.5)*260, vy:Math.random()*120, life:0.6, max:0.6, c:'#fff', sz:4, k:'spark'});
     return true;
   }
+  if (pow.piano > 0 && state==='play' && P.y > 150 && t - (P.stepT||0) > 0.16) return rainbowStep();
+  if (skill('pianist') && !P.keyUsed && state==='play' && !L.gd && P.y > 150){ P.keyUsed = true; return rainbowStep(); }
   return false;
+}
+function rainbowStep(){
+  // a coloured piano key appears under your feet and you hop up from it: tap tap tap = a rainbow staircase
+  P.stepT = t; const n = (P.stepN = (P.stepN||0) + 1), perfect = beatPulse() > 0.5;
+  const k = {x:P.x - 34, w:perfect ? 108 : 90, y:P.y + 2, y0:P.y + 2, rainbow:true, born:t, hue:(n*47) % 360, s:-1, th:L.themeAt(P.x)};
+  L.plats.push(k);
+  P.vy = -760; P.ground = false; P.on = null; P.holdT = 0; P.jumps = 0; P.sq = 1.1;
+  pianoNext(); burst(P.x, P.y, 10, 180, ['hsl(' + k.hue + ',100%,65%)', '#fff']);
+  if (perfect){ count += 2; hudBump = 1; pops.push({x:P.x, y:P.y - 60, text:'PERFETTO! +2', life:0.8, col:'hsl(' + k.hue + ',100%,70%)'}); }
+  return true;
 }
 function dust(x,y,n){ for (let i=0;i<n;i++) parts.push({x:x-6, y, vx:-Math.random()*140, vy:-Math.random()*80, life:0.4, max:0.4, c:'rgba(255,255,255,.75)', sz:5+Math.random()*4, k:'dot'}); }
 function burst(x,y,n,spd,cols){ cols = cols || ['#ffd23f','#ff6b4a','#fff','#22b8a7']; for (let i=0;i<n;i++){ const a=i/n*Math.PI*2; parts.push({x, y, vx:Math.cos(a)*spd, vy:Math.sin(a)*spd, life:0.6, max:0.6, c:cols[i%cols.length], sz:5, k:'spark'}); } }
 function cubes(x,y,n,cols){ for (let i=0;i<n;i++) parts.push({x, y, vx:(Math.random()-0.3)*420, vy:-Math.random()*520, life:0.8, max:0.8, c:cols[i%cols.length], sz:7, k:'cube'}); }
 function pop(text, col){ pops.push({x:P.x, y:P.y-100, text, life:1.1, col:col||'#ffd23f'}); }
 function hurt(dmg){
-  if (state==='play' && !L.shield && ((skill('builder') && !L.gd) || (skill('gdcube') && L.gd))){
-    L.shield = true; P.inv = 1.6; shake = 6; sfx.block ? sfx.block() : sfx.smash(); burst(P.x, P.y - 40, 16, 240, ['#ffd23f','#fff','#3ad1ff']);
-    pops.push({x:P.x, y:P.y - 110, text:skill('builder') ? 'Casco! 👷 Salvo!' : 'Scudo! 🟦 Salvo!', life:1.2, col:'#ffd23f'}); return;
+  if (state==='play' && !L.gd){
+    if (skill('ninja') && P.dashT > 0) return;
+    if (skill('racer') && P.turbo && P.boost > 0){ shake = 6; sfx.smash(); burst(P.x + 20, P.y - 30, 12, 240, ['#ff6b4a','#ffd23f','#fff']); return; }
+    if (skill('gdcube') && P.vy > 0 && !P.ground){ P.vy = -1000; P.jumps = maxJumps(); P.dashOK = true; P.inv = 0.35; sfx.boing(); shake = 5; burst(P.x, P.y, 14, 240, [COLORS[AV.color], '#fff']); pops.push({x:P.x, y:P.y - 90, text:'BOING CUBO!', life:0.9, col:'#3ad1ff'}); return; }
+    if (skill('gold') && t - (L.midasT == null ? -99 : L.midasT) > 8){ L.midasT = t; P.inv = 1.0; count += 5; hudBump = 1; sfx.fanfare(); for (let i=0;i<18;i++){ const a = i/18*Math.PI*2; parts.push({x:P.x + 30, y:P.y - 30, vx:Math.cos(a)*260, vy:Math.sin(a)*260, life:0.7, max:0.7, c:'#ffd23f', sz:6, k:'spark'}); } pops.push({x:P.x, y:P.y - 110, text:'TOCCO D\'ORO! +5 👑', life:1.2, col:'#ffd23f'}); return; }
   }
   dmg = dmg || 1; L.hitsTaken = (L.hitsTaken||0) + 1; hearts = L.gd ? 0 : Math.max(0, hearts - dmg); if (dmg > 1 && !L.gd) pops.push({x:P.x, y:P.y - 110, text:'-' + dmg + ' ♥', life:1, col:'#ff4d6d'}); P.inv = 1.6; sfx.hurt(); shake = 7; if (!say('ouch')) VOX.ow();
   if (L.gd){ burst(P.x, P.y - 20, 22, 320, [COLORS[AV.color], '#fff']); }
@@ -1193,7 +1231,7 @@ function respawnFromCheckpoint(){
   if (L.gd) pow.geo = 1e9;
   const p = platUnder(x0) || L.plats[0];
   P = freshPlayer(x0, p.y); P.inv = 1.5;
-  hearts = maxHearts(); L.shield = false; count = L.cpHit ? L.cpCount : 0; combo = 0; L.coinRun = L.cpHit ? L.cpCoin : 0; bigText = null; saveProg();
+  hearts = maxHearts(); count = L.cpHit ? L.cpCount : 0; combo = 0; L.coinRun = L.cpHit ? L.cpCoin : 0; bigText = null; saveProg();
   if (L.cpHit) pops.push({x:P.x + 120, y:P.y - 110, text:'Dal checkpoint! 🚩', life:1.4, col:'#7ae040'});
   for (const rg of L.rings) if (rg.x > x0){ rg.done = false; rg.ok = false; }
   for (const c of L.coins) if (c.x > x0) c.taken = false;
@@ -1218,7 +1256,8 @@ function smashObst(o, ox, oy, kind){
 }
 const COMBO_WORDS = ['Nice!','Great!','Awesome!','Super!','Amazing!','Fantastic!','WOW!','Yalla!','Cool!','Bravo!'];
 function collectItem(it){
-  it.taken = true; const v = ((pow.piano>0 || pow.lego>0) ? 2 : 1) * (it.big ? 5 : 1) * (skill('gold') ? 2 : 1); count += v; hudBump = 1; sfx.collect(); combo++; comboT = 1.3;
+  it.taken = true; const v = ((pow.piano>0 || pow.lego>0) ? 2 : 1) * (it.big ? 5 : 1); count += v; hudBump = 1; sfx.collect(); combo++; comboT = 1.3;
+  if (skill('racer') && state==='play' && !L.gd && (P.turboN = (P.turboN||0) + 1) >= 15){ P.turboN = 0; P.boost = 2.2; P.turbo = true; sfx.zoom(); pop('TURBO DI FUOCO! 🔥', '#ff6b4a'); }
   if (it.big){ VOX.giggle(); burst(it.x, it.y, 14, 220); pops.push({x:it.x, y:it.y - 30, text:'+' + v, life:1, col:'#ffd23f'}); }
   for (let i=0;i<6;i++){ const a=i/6*Math.PI*2; parts.push({x:it.x, y:it.y, vx:Math.cos(a)*160, vy:Math.sin(a)*160, life:0.4, max:0.4, c:'#ffe27a', sz:4, k:'spark'}); }
   if (pow.piano>0) parts.push({x:it.x, y:it.y, vx:0, vy:-90, life:1, max:1, c:'#fff', sz:26, k:'note'});
@@ -1284,7 +1323,7 @@ function update(dt){
   if (P.buf > 0){ if (doJump()) P.buf = 0; else P.buf -= dt; }
 
   const hw = truck ? 34 : 10, ph = truck ? 72 : (LV.baby ? 40 : 60);
-  const prevX = P.x; P.x += (sp + (P.dashT > 0 ? (skill('racer') ? 820 : 700) : 0))*dt;
+  const prevX = P.x; P.x += (sp + (P.dashT > 0 ? 700 : 0))*dt;
   if (P.dashT > 0){ (P.ghosts = P.ghosts || []).push({x:P.x, y:P.y, life:0.28}); }
   if (P.ghosts){ for (const g of P.ghosts) g.life -= dt; P.ghosts = P.ghosts.filter(g=>g.life > 0); }
   if (P.dashT > 0 && Math.random() < 0.9) parts.push({x:P.x - 10, y:P.y - 10 - Math.random()*45, vx:-300, vy:0, life:0.25, max:0.25, c:'rgba(255,158,240,.8)', sz:30 + Math.random()*30, k:'line'});
@@ -1347,7 +1386,7 @@ function update(dt){
       dust(P.x, ny, truck?10:4); P.sq = 0.86; if (P.vy > 950 && state!=='attract'){ parts.push({k:'ring', x:P.x, y:ny, vx:0, vy:0, life:0.35, max:0.35, c:'rgba(255,255,255,.9)', sz:12}); shake = Math.max(shake, 4); }
       if (P.balloon) P.balloon = false;
       if (truck) shake = 6;
-      if (land.ghost && state!=='attract'){ pianoKey(FRA[pianoIdx++%FRA.length]); land.lit = t; }
+      if (land.ghost && state!=='attract'){ pianoNext(); land.lit = t; }
       P.ground = true; P.on = land; P.vy = 0; P.lastGY = ny; P.jumps = maxJumps(); P.dashOK = true; P.wj = 0;
       if (pow.shoes > 0 && pow.geo <= 0 && pow.truck <= 0 && pow.lego <= 0 && pow.blocks <= 0 && P.slide <= 0 && !P.slideQ && state!=='attract' && !(LEVELS[curLi].baby)){
         P.pogo = Math.min((P.pogo||0) + 1, 4); P.vy = -(860 + P.pogo*40); P.ground = false; P.on = null; P.holdT = 0; P.sq = 1.18; P.spin = P.pogo >= 3 ? 0.001 : 0;
@@ -1399,6 +1438,7 @@ function update(dt){
       if (PI.pop && state==='play') pop(PI.pop);
     }
   }
+  if (L.plats.some(p=>p.rainbow)) L.plats = L.plats.filter(p=>!p.rainbow || t - p.born < 2.6 || P.on===p);
   viewFlip += ((P.flip ? -1 : 1) - viewFlip)*Math.min(1, dt*7); viewMir += ((P.mir ? -1 : 1) - viewMir)*Math.min(1, dt*7);
   mcNeed = pow.blocks > 0 && P.ground && !groundAt(P.x + 150, P.lastGY) && !groundAt(P.x + 250, P.lastGY);
   const inLake = L.themeAt(P.x)==='lake', limit = inLake ? 480 : 640;
@@ -1423,7 +1463,7 @@ function update(dt){
     if (Math.abs(ox - P.x) < hw+14 && P.y > oy-34 && P.y-ph+8 < oy){
       if (truck) smashObst(o, ox, oy, 'n');
       else if (pow.blocks>0) smashObst(o, ox, oy, 'mc');
-      else if ((P.dashT > 0 || (pow.shoes > 0 && P.vy > 0 && P.y < oy - 6)) && !o.sharp && state==='play'){ smashObst(o, ox, oy, 'n'); pop(P.dashT > 0 ? 'DASH SMASH! +1' : 'STOMP! +1', '#ff9ef0'); if (P.dashT > 0){ if (tot('smash') >= 10) medal('dash10'); } else if (tot('stomp') >= 20) medal('stomp20'); if (pow.shoes > 0 && P.dashT <= 0){ P.vy = -900; P.ground = false; P.on = null; } }
+      else if ((P.dashT > 0 || (P.turbo && P.boost > 0) || (pow.shoes > 0 && P.vy > 0 && P.y < oy - 6)) && !o.sharp && state==='play'){ smashObst(o, ox, oy, 'n'); pop(P.dashT > 0 ? 'DASH SMASH! +1' : 'STOMP! +1', '#ff9ef0'); if (P.dashT > 0){ if (tot('smash') >= 10) medal('dash10'); } else if (tot('stomp') >= 20) medal('stomp20'); if (pow.shoes > 0 && P.dashT <= 0){ P.vy = -900; P.ground = false; P.on = null; } }
       else if (P.vy > 150 && P.y < oy-14 && o.t!=='knight' && !o.sharp){
         if (P.slideQ){ P.slideQ = false; pop('STOMP!', '#ffd23f'); shake = 6; count += 2; } P.vy = -620; P.ground = false; P.on = null; P.dashOK = true; o.hit = true; if (state==='play' && tot('stomp') >= 20) medal('stomp20'); o.vx = 200; o.vy = -300; sfx.jump2(); VOX.squeak(); count++; burst(ox, oy-20, 8, 160);
       } else if (state==='attract'){ o.hit = true; o.vx = 260; o.vy = -520; }
@@ -1451,7 +1491,7 @@ function update(dt){
     for (const it of L.items){ if (!it.taken && Math.abs(it.x - pet.x) < 34 && Math.abs(it.y - (pet.y-20)) < 50) collectItem(it); }
   }
   const cx = P.x, cy = P.y - ph/2, rad = truck ? 52 : 36;
-  const mr = skill('pianist') ? 340 : 175;
+  const mr = 175;
   for (const it of L.items){
     if (it.taken) continue;
     const dx = it.x - cx, dy = it.y - cy;
@@ -1487,6 +1527,20 @@ function update(dt){
       bl.popped = true; count += 3; hudBump = 1; sfx.pop(); VOX.yay(); burst(bl.x, bl.y, 18, 280, [bl.c, '#fff', '#ffd23f']);
       pops.push({x:bl.x, y:bl.y - 30, text:'POP! +3', life:1.1, col:bl.c});
     }
+  }
+  if (P.turbo && P.boost <= 0) P.turbo = false;
+  if (P.turbo && P.boost > 0) for (let i=0;i<2;i++) parts.push({x:P.x - 14, y:P.y - 10 - Math.random()*40, vx:-200 - Math.random()*200, vy:-Math.random()*60, life:0.35, max:0.35, c:['#ff6b4a','#ffd23f','#ff4d6d'][i + Math.floor(Math.random()*2)], sz:7 + Math.random()*6, k:'dot'});
+  if (skill('robot') && state==='play'){
+    if (P.ground) P.fuel = 1;
+    else if (holding && P.vy > -150 && (P.fuel||0) > 0 && !P.ship && !P.zip && pow.fly <= 0 && pow.geo <= 0 && P.dashT <= 0){
+      P.fuel -= dt; P.vy = Math.max(P.vy - 4300*dt, -300);
+      if (Math.random() < 0.8) parts.push({x:P.x - 4 + (Math.random()-0.5)*10, y:P.y + 4, vx:(Math.random()-0.5)*60, vy:240, life:0.3, max:0.3, c:['#ffd23f','#ff6b4a','#fff'][Math.floor(Math.random()*3)], sz:6, k:'dot'});
+    }
+  }
+  if (skill('builder') && state==='play' && P.ground && !L.gd && pow.blocks <= 0 && t - (L.bridgeT == null ? -99 : L.bridgeT) > 3.5 && !groundAt(P.x + 70, P.lastGY)){
+    // find where the hole ends; bridge it if it is not a bottomless chasm
+    let end = 0; for (let bx = P.x + 70; bx < P.x + 560; bx += 20) if (groundAt(bx, P.lastGY)){ end = bx; break; }
+    if (end){ L.bridgeT = t; for (let bx = Math.floor((P.x + 40)/40)*40; bx < end; bx += 40) if (!groundAt(bx + 20, P.lastGY)) L.plats.push({x:bx, w:40, y:P.lastGY, y0:P.lastGY, s:-1, brick:'mc', born:t, c:Math.floor(Math.random()*6)}); sfx.block(); pop('Ponte! 👷', '#ffd23f'); }
   }
   if (P.ground && P.boost <= 0.2){
     for (const bo of L.boosts){ if (Math.abs(P.x - bo.x - 30) < 34 && Math.abs(P.y - bo.y) < 3){ P.boost = 1.6; sfx.zoom(); pop('ZOOM!', '#3ad1ff'); break; } }
@@ -2799,6 +2853,12 @@ function drawPlatform(p, st){
     ctx.strokeStyle = '#5a4030'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(sx + p.w*0.3, p.y); ctx.lineTo(sx + p.w*0.4, p.y + 14); ctx.lineTo(sx + p.w*0.33, p.y + 28); ctx.moveTo(sx + p.w*0.7, p.y + 2); ctx.lineTo(sx + p.w*0.62, p.y + 18); ctx.stroke();
     ctx.restore(); return;
   }
+  if (p.rainbow){
+    const age = t - p.born, a = clamp((2.6 - age)/0.6, 0, 1);
+    ctx.save(); ctx.globalAlpha *= a; ctx.fillStyle = 'hsl(' + p.hue + ',95%,62%)'; ctx.shadowColor = ctx.fillStyle; ctx.shadowBlur = 14;
+    rr(sx, p.y, p.w, 24, 6); ctx.fill(); ctx.shadowBlur = 0; ctx.fillStyle = 'rgba(255,255,255,.55)'; rr(sx + 6, p.y + 3, p.w - 12, 6, 3); ctx.fill();
+    ctx.fillStyle = '#1d1640'; rr(sx + p.w*0.62, p.y, p.w*0.2, 13, 3); ctx.fill(); ctx.restore(); return;
+  }
   if (p.ghost){
     const on = pow.piano > 0, lit = p.lit && t - p.lit < 0.3;
     ctx.save(); ctx.globalAlpha *= on ? 1 : 0.3 + 0.1*Math.sin(t*4);
@@ -3347,6 +3407,13 @@ function drawHUD(){
     ctx.font='54px '+FONT; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('👆', hx2+6, hy+34 + Math.sin(t*8)*4);
   }
   if (pow.fly > 0 && !holding && state==='play'){ ctx.globalAlpha = 0.6+0.4*Math.sin(t*8); ctx.font='800 26px '+FONT; ctx.fillStyle='#fff'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('👆 Hold! Tieni premuto!', VW/2, 500); ctx.globalAlpha = 1; }
+  if (pow.piano > 0 && state==='play'){
+    const sg = PIANO_SONGS[pianoSong % PIANO_SONGS.length], fr = pianoIdx / sg.m.length, w = 230, x0 = VW/2 - w/2, y0 = 150;
+    ctx.fillStyle = 'rgba(20,12,50,.6)'; rr(x0 - 10, y0 - 22, w + 20, 46, 14); ctx.fill();
+    ctx.font = '800 15px ' + FONT; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#fff'; ctx.fillText('🎹 ' + sg.n + ' · ' + sg.en, VW/2, y0 - 9);
+    ctx.fillStyle = 'rgba(255,255,255,.2)'; rr(x0, y0 + 3, w, 12, 6); ctx.fill();
+    const g = ctx.createLinearGradient(x0, 0, x0 + w, 0); ['#ff4d6d','#ffd23f','#7ae040','#3ad1ff','#8f6bff'].forEach((c,i)=>g.addColorStop(i/4, c)); ctx.fillStyle = g; rr(x0, y0 + 3, Math.max(12, w*fr), 12, 6); ctx.fill();
+  }
   const B = L.boss;
   if (B && B.on && !B.done && state==='play'){
     const I = BOSSES[B.k], w = 280, x0 = VW/2 - w/2, y0 = 94;
@@ -3553,8 +3620,8 @@ function openLevel(i){
     document.getElementById('introNum').textContent = 'Livello extra · Bonus level' + (PRO ? '  ·  PRO 🔥' : '');
     document.getElementById('introName').textContent = lv.name;
     document.getElementById('introGoals').textContent = goalText(TRAMP_GOALS) + '  ·  Record: ' + (bestArr()[i]||0);
-    document.getElementById('powTitle').textContent = 'Salta e fai le acrobazie!';
-    document.getElementById('powHint').textContent = 'Tocca a DESTRA per il salto mortale in avanti, a SINISTRA per quello all\'indietro. Tocca appena prima di atterrare per saltare più in alto! Non atterrare a metà giro! · Right = frontflip, left = backflip, 60 seconds!';
+    document.getElementById('powTitle').textContent = '🤸 Acrobazie!';
+    document.getElementById('powHint').textContent = '👉 Destra = salto avanti · 👈 Sinistra = salto indietro · Non atterrare a metà giro!';
     paintIcon(()=>{ ctx.setTransform(1,0,0,1,0,0); ctx.strokeStyle = '#3ad1ff'; ctx.lineWidth = 6; ctx.beginPath(); ctx.ellipse(55, 82, 42, 8, 0, 0, Math.PI*2); ctx.stroke(); ctx.strokeStyle = '#555'; ctx.lineWidth = 4; for (const lx of [-30, 30]){ ctx.beginPath(); ctx.moveTo(55 + lx, 86); ctx.lineTo(55 + lx*1.1, 104); ctx.stroke(); } ctx.font = '46px ' + FONT; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('🤸', 55, 40); });
     setupRec(); show('intro'); return;
   }
@@ -3563,12 +3630,12 @@ function openLevel(i){
   document.getElementById('introName').textContent = lv.name;
   document.getElementById('introGoals').textContent = goalText(L.goals) + '  ·  Record' + (PRO ? ' PRO' : '') + ': ' + (bestArr()[i]||0);
   if (lv.pow){
-    document.getElementById('powTitle').textContent = 'Nuovo potere! · New power!';
-    document.getElementById('powHint').textContent = POWERS[lv.pow].name+'. '+POWERS[lv.pow].hint+' · '+POWERS[lv.pow].enHint;
+    document.getElementById('powTitle').textContent = POWERS[lv.pow].name;
+    document.getElementById('powHint').textContent = POWERS[lv.pow].hint+' · '+POWERS[lv.pow].enHint;
     paintIcon(()=>{ ctx.setTransform(2.4,0,0,2.4,55,58); ICONS[lv.pow](); });
   } else if (lv.baby){
     document.getElementById('powTitle').textContent = 'Sei un bebè!';
-    document.getElementById('powHint').textContent = 'Gattona per la cameretta, prendi i ciucci e saluta gli altri bebè.';
+    document.getElementById('powHint').textContent = 'Prendi i ciucci! Scappa dalla Tata 🏃';
     paintIcon(()=>{ ctx.setTransform(2.2,0,0,2.2,40,85); const sp = pow; pow = {}; drawBaby(AV, {run:1, air:false, sq:1}); pow = sp; });
   } else {
     document.getElementById('powTitle').textContent = 'Il gran finale!';
@@ -3918,16 +3985,33 @@ function optRow(list, key, cat, paint){
     const locked = cat && !hasItem(cat, i, list);
     if (locked){ const s = document.createElement('span'); s.className = 'cost' + (it.coins ? ' coin' : ''); s.textContent = it.coins ? '🪙 ' + it.coins : '★ ' + it.cost; b.appendChild(s); }
     b.onclick = ()=>{
-      if (cat && !hasItem(cat, i, list)){
-        if (it.coins){ b.animate([{transform:'translateX(0)'},{transform:'translateX(-6px)'},{transform:'translateX(6px)'},{transform:'translateX(0)'}], {duration:250}); const nt = document.getElementById('coinNote'); if (nt) nt.textContent = it.pw + ' · servono ' + it.coins + ' monete segrete (ne hai ' + coinTotal() + '). Cercale nei livelli!'; return; }
-        if (bank >= it.cost){ bank -= it.cost; store.set('corri3-bank', bank); owned.add(cat+':'+i); store.set('corri3-owned', [...owned]); sfx.power(); updBank(); }
-        else { b.animate([{transform:'translateX(0)'},{transform:'translateX(-6px)'},{transform:'translateX(6px)'},{transform:'translateX(0)'}], {duration:250}); return; }
-      }
+      // locked items open a preview first: nothing is spent until "Sblocca!" is pressed
+      if (cat && (!hasItem(cat, i, list) || (it.coins && !owned.has(cat+':'+i)))){ openBuy(cat, i, it, key, paint); sfx.click(); return; }
       AV[key] = i; saveAV(); renderPanel(); sfx.click();
     };
     row.appendChild(b);
   });
   return row;
+}
+const ITEM_NAMES = {tee:'Maglietta', soccer:'Calcio', hero:'Supereroe', pirate:'Pirata', astro:'Astronauta', dino:'Dinosauro', ninja:'Ninja', racer:'Pilota', builder:'Costruttore', pianist:'Pianista', gdcube:'Cubo GD', robot:'Robot', gold:'Oro', cap:'Cappellino', glasses:'Occhiali', phones:'Cuffie', sun:'Cappello da sole', crown:'Corona', cat:'Gattino', falcon:'Falco', camel:'Cammello', pony:'Pony'};
+function openBuy(cat, i, it, key, paint){
+  const box = document.getElementById('buy'), yes = document.getElementById('buyYes');
+  document.getElementById('buyName').textContent = ITEM_NAMES[it.id] || it.id;
+  document.getElementById('buyPow').textContent = it.pw || '';
+  const coinOK = it.coins && coinTotal() >= it.coins, starOK = !it.coins && bank >= it.cost;
+  document.getElementById('buyCost').textContent = it.coins ? (coinOK ? '🪙 Hai abbastanza monete segrete (' + coinTotal() + '/' + it.coins + ')!' : '🪙 Servono ' + it.coins + ' monete segrete: ne hai ' + coinTotal() + '. Cercale nei livelli!')
+    : (starOK ? '★ Costa ' + it.cost + ' stelle · nel salvadanaio ne hai ' + bank : '★ Costa ' + it.cost + ' stelle: te ne mancano ' + (it.cost - bank));
+  yes.hidden = !(coinOK || starOK);
+  const tmp = document.createElement('canvas'); tmp.width = tmp.height = 128; const sp = pow; pow = null;
+  try { withCtx(tmp, ()=>{ ctx.setTransform(1,0,0,1,0,0); ctx.clearRect(0,0,128,128); paint(i); }); } finally { pow = sp; }
+  const bc = document.getElementById('buyCv').getContext('2d'); bc.setTransform(1,0,0,1,0,0); bc.clearRect(0,0,200,200); bc.drawImage(tmp, 0, 0, 200, 200);
+  yes.onclick = ()=>{
+    if (!it.coins){ if (bank < it.cost) return; bank -= it.cost; store.set('corri3-bank', bank); }
+    owned.add(cat+':'+i); store.set('corri3-owned', [...owned]); sfx.power(); updBank();
+    AV[key] = i; saveAV(); box.hidden = true; renderPanel();
+  };
+  document.getElementById('buyNo').onclick = ()=>{ box.hidden = true; sfx.click(); };
+  box.hidden = false;
 }
 function renderPanel(){
   updBank();
@@ -3942,7 +4026,7 @@ function renderPanel(){
   } else if (curTab==='outfit'){
     pn.appendChild(optRow(OUTFITS, 'outfit', 'outfit', i=>{ ctx.setTransform(1.6,0,0,1.6,62,122); drawFig(Object.assign({}, AV, {outfit:i}), {run:0, air:false, sq:1}); }));
     pn.appendChild(swRow(COLORS.slice(0,7), 'color', 'Colore'));
-    const cn = document.createElement('div'); cn.className = 'note'; cn.id = 'coinNote'; const cur = OUTFITS[AV.outfit]; cn.textContent = (cur.pw ? 'Potere: ' + cur.pw + '  ·  ' : '') + '🪙 ' + coinTotal() + '/' + COIN_TOTAL + ' monete segrete · le skin con 🪙 hanno un potere speciale!'; pn.appendChild(cn);
+    const cn = document.createElement('div'); cn.className = 'note'; cn.id = 'coinNote'; const cur = OUTFITS[AV.outfit]; cn.textContent = (cur.pw ? cur.pw + '  ·  ' : '') + '🪙 ' + coinTotal() + '/' + COIN_TOTAL; pn.appendChild(cn);
   } else if (curTab==='hat'){
     pn.appendChild(optRow(HATS, 'hat', 'hat', i=>{ ctx.setTransform(2.6,0,0,2.6,60,200); drawHead(Object.assign({}, AV, {hat:i, outfit: OUTFITS[AV.outfit].id==='astro' || OUTFITS[AV.outfit].id==='dino' ? 0 : AV.outfit}), 2, -53); if (i===0){ ctx.setTransform(1,0,0,1,0,0); ctx.strokeStyle='rgba(255,255,255,.8)'; ctx.lineWidth=8; ctx.beginPath(); ctx.moveTo(90,20); ctx.lineTo(118,48); ctx.moveTo(118,20); ctx.lineTo(90,48); ctx.stroke(); } }));
   } else if (curTab==='pet'){
