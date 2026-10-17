@@ -374,7 +374,7 @@ function unlockedPows(li){ const s = []; for (const i of ORDER.slice(0, ORDER.in
 
 function genLevel(li){
   const LV = LEVELS[li], r = mulberry32(4242+li*101+(PRO?77:0)), R = (a,b)=>a+r()*(b-a), pick = a=>a[Math.floor(r()*a.length)];
-  const L = {li, gd:!!LV.gd, gd2:!!LV.gd2, plats:[], items:[], obst:[], pows:[], friends:[], springs:[], boosts:[], balloons:[], haz:[], orbs:[], portals:[], hints:[], drops:[], zips:[], saws:[], rings:[], coins:[], boss:null, coinsN:0, pro:PRO, dmg: LV.baby ? 1 : (li >= 3 || PRO) ? 2 : 1, themes: LV.theme==='mix' ? MIX : [LV.theme]};
+  const L = {cpList:[], gaunts:[], li, gd:!!LV.gd, gd2:!!LV.gd2, plats:[], items:[], obst:[], pows:[], friends:[], springs:[], boosts:[], balloons:[], haz:[], orbs:[], portals:[], hints:[], drops:[], zips:[], saws:[], rings:[], coins:[], boss:null, coinsN:0, pro:PRO, dmg: LV.baby ? 1 : (li >= 3 || PRO) ? 2 : 1, themes: LV.theme==='mix' ? MIX : [LV.theme]};
   const LVLEN = LV.length * (PRO && !LV.gd && !LV.baby ? 1.6 : 1);
   const segLen = LVLEN / L.themes.length;
   L.segLen = segLen;
@@ -551,6 +551,29 @@ function genLevel(li){
       plat(x, 520, gy); x += 520; y = gy;
     }
   };
+  // SFIDA: a long mandatory Geometry-Dash style stretch with no breaks, each beat asks for a different move; checkpoint right before
+  const gauntlet = ()=>{
+    const G = 400; x += R(90, 120); plat(x, 520, G); L.cpList.push({x:x + 200, g:null}); const cp = L.cpList[L.cpList.length-1]; x += 520;
+    const g = {x0:x}; cp.g = g; L.gaunts.push(g);
+    const se = LV.speed*1.2*(0.94 + 0.16*clamp(x/LVLEN, 0, 1)), gp = ()=>R(95, 120), gx = {gaunt:true};
+    const POOL = PRO ? ['spike','spike2','gap','dgap','dash','slide','lowL','highL','orb','jumpSlide','step'] : ['spike','gap','slide','lowL','highL','step'];
+    const n = PRO ? 8 : 6; let last = '';
+    for (let k=0;k<n;k++){
+      let b; do { b = pick(POOL); } while (b===last); last = b;
+      if (b==='spike'){ x += gp(); plat(x, 440, G, gx); L.obst.push(mkObst(x + 270, G, 'spike', r)); L.items.push({x:x + 270, y:G - 110}); x += 440; }
+      else if (b==='spike2'){ x += gp(); plat(x, 500, G, gx); L.obst.push(mkObst(x + 270, G, 'spike', r)); L.obst.push(mkObst(x + 302, G, 'spike', r)); arc(x + 220, x + 360, G - 90, 50, 3); x += 500; }
+      else if (b==='gap'){ x += R(230, 260); arc(x - 230, x, G - 60, 70, 3); plat(x, 300, G, gx); x += 300; }
+      else if (b==='dgap'){ x += R(360, 390); arc(x - 360, x, G - 120, 120, 5); plat(x, 320, G, gx); x += 320; }
+      else if (b==='dash'){ const gg = Math.round(se*1.1 + 60); x += gg; arc(x - gg, x, G - 160, 160, 7); L.rings.push({x:x - gg*0.45, y:G - 230, r:56, done:false}); plat(x, 340, G, gx); x += 340; }
+      else if (b==='slide'){ x += gp(); plat(x, 560, G, gx); L.haz.push({x:x + 260, w:R(170, 210), y0:-300, y1:G - 40, k:'roof'}); row(x + 290, G - 20, 3, 60); x += 560; }
+      else if (b==='lowL'){ x += gp(); plat(x, 460, G, gx); L.haz.push({x:x + 260, w:40, y0:G - 92, y1:G + 2, k:'laser'}); L.items.push({x:x + 280, y:G - 150}); x += 460; }
+      else if (b==='highL'){ x += gp(); plat(x, 460, G, gx); L.haz.push({x:x + 260, w:40, y0:G - 215, y1:G - 42, k:'laser'}); L.items.push({x:x + 280, y:G - 22}); x += 460; }
+      else if (b==='orb'){ const gg = R(400, 430); L.orbs.push({x:x + 175, y:G - 190, t:-9}); arc(x + 175, x + gg, G - 260, 60, 4); x += gg; plat(x, 320, G, gx); x += 320; }
+      else if (b==='jumpSlide'){ x += gp(); plat(x, 860, G, gx); L.obst.push(mkObst(x + 260, G, 'spike', r)); L.haz.push({x:x + 600, w:180, y0:-300, y1:G - 40, k:'roof'}); L.items.push({x:x + 260, y:G - 110}); row(x + 620, G - 20, 3, 60); x += 860; }
+      else if (b==='step'){ x += gp(); plat(x, 260, G - 90, gx); L.items.push({x:x + 130, y:G - 135}); x += 260; x += gp(); plat(x, 300, G, gx); x += 300; }
+    }
+    g.endX = x + 60; x += gp(); plat(x, 520, G); L.items.push({x:x + 180, y:G - 60, big:true}); x += 520; y = G;
+  };
   const avail = LV.theme==='mix' ? ALL_POWS : unlockedPows(li);
   L.checkX = null;
   const gapMax = LV.baby ? (PRO ? 175 : 130) : 185 + 45*diff;
@@ -600,6 +623,7 @@ function genLevel(li){
       nextCh = Math.max(nextCh, x + (pw==='fly' ? 2600 : pw==='geo' ? 400 : 900));
       continue;
     }
+    if (!LV.baby && L.gaunts.length < (PRO ? (LV.theme==='mix' ? 3 : 2) : 1) && x > LVLEN*[0.33, 0.66, 0.85][L.gaunts.length] && x < LVLEN - 2500){ gauntlet(); nextCh = x + R(300, 600); continue; }
     if (!LV.baby && x > nextCh && x < LVLEN - 500){
       L.nch = (L.nch||0) + 1;
       if (PRO){
@@ -648,6 +672,8 @@ function genLevel(li){
     for (const o of L.obst) add(o.x - 40, o.x + 40);
     for (const h of L.haz) add(h.x, h.x + h.w);
     for (const q of L.saws) add(q.x - 40, q.x + 40);
+    for (const c of L.cpList) add(c.x - 300, c.x + 500);
+    for (const g of L.gaunts) add(g.x0, g.endX + 600);
     for (const d of L.drops) add(d.x - 60, d.x + 60);
     for (const q of L.springs) add(q.x - 20, q.x + 280);
     for (const q of L.boosts) add(q.x, q.x + 300);
@@ -684,14 +710,14 @@ function genLevel(li){
   }
   if (PRO && LV.baby){
     x += 110; const BL = Math.round(26*LV.speed*1.2);
-    plat(x, BL, 400, {arena:true}); L.cpX = x + 60;
+    plat(x, BL, 400, {arena:true}); L.cpList.push({x:x + 60});
     L.boss = {k:'nanny', x0:x + 450, x1:x + BL - 300, need:12, got:0, toys:[], spawn:0.5, ti:0, hp:1, max:1, on:false, done:false, ph:'wait', pt:0, off:-700, y:400, shots:[], bx:x, wave:0, n:0, hitT:0};
     x += BL; y = 400;
   }
   if (PRO && !LV.gd && !LV.baby){
     // boss arena: one long flat stage, the boss attacks, then swoops down to be stomped
     x += 110; const hp = li === 9 ? 4 : 3, two = LV.theme==='chess', BL = Math.round((1.6 + hp*7.4*(two ? 2 : 1) + (two ? 12 : 9))*LV.speed*1.2*1.1*0.9*1.25);
-    plat(x, BL, 400, {arena:true}); L.cpX = x + 60;
+    plat(x, BL, 400, {arena:true}); L.cpList.push({x:x + 60});
     L.boss = {k:LV.theme==='mix' ? 'mix' : LV.theme, x0:x + 520, x1:x + BL - 300, hp, max:hp, on:false, done:false, ph:'wait', pt:0, off:900, y:190, shots:[], n:0, wave:0, hitT:0, bx:x + 1400,
       next: two ? 'queen' : null, pat: li === 9 ? ['low','bounce','high','low','high','bounce'] : li >= 6 ? ['low','high','bounce','high','low','bounce'] : ['low','high','low','bounce','high','low']};
     for (let k=0; k*900 + 900 < BL - 400; k++) row(x + 900 + k*900, k%2 ? 230 : 356, 3, 50);
@@ -704,7 +730,7 @@ function genLevel(li){
   L.items.forEach((i, n)=>{ i.taken = false; i.ox = i.x; i.oy = i.y; if (n % 11 === 7) i.big = true; }); L.pows.forEach(p=>p.taken=false);
   if (L.checkX===null) L.checkX = L.finishX*0.5;
   L.totalItems = L.items.length;
-  const M = L.items.reduce((a, i)=>a + (i.big ? 5 : 1), 0) + 3*(L.balloons.length + L.friends.length) + 2*L.rings.length + (L.boss ? (L.boss.k==='nanny' ? 106 : 30 + 5*L.boss.max*(L.boss.next ? 2 : 1)) : 0), GK = L.gd ? [0.6, 0.85, 1] : LV.baby ? [0.5, 0.8, 1.1] : [0.9, 1.4, 1.9];
+  const M = L.items.reduce((a, i)=>a + (i.big ? 5 : 1), 0) + 20*L.gaunts.length + 3*(L.balloons.length + L.friends.length) + 2*L.rings.length + (L.boss ? (L.boss.k==='nanny' ? 106 : 30 + 5*L.boss.max*(L.boss.next ? 2 : 1)) : 0), GK = L.gd ? [0.6, 0.85, 1] : LV.baby ? [0.5, 0.8, 1.1] : [0.9, 1.4, 1.9];
   L.goals = GK.map(k=>Math.round(M*k));
   return L;
 }
@@ -840,12 +866,13 @@ const MEDALS = [
   {id:'combo30', e:'🔥', n:'Combo pazzesca', en:'Crazy combo', d:'Combo x30'},
   {id:'coin1', e:'🪙', n:'Moneta segreta', en:'Secret coin', d:'Trova una moneta segreta'},
   {id:'coin3', e:'🧭', n:'Tesoro completo', en:'Full treasure', d:'3 monete segrete in un livello'},
-  {id:'coinAll', e:'💎', n:'Cacciatore di tesori', en:'Treasure hunter', d:'Tutte le 27 monete segrete'},
+  {id:'coinAll', e:'💎', n:'Cacciatore di tesori', en:'Treasure hunter', d:'Tutte le 30 monete segrete'},
   {id:'stomp20', e:'👟', n:'Pestatore', en:'Stomper', d:'20 STOMP in tutto'},
   {id:'pogo', e:'🦘', n:'Super molla', en:'Super bounce', d:'BOING x4 con le scarpe a molla'},
   {id:'lego', e:'🧱', n:'Costruttore', en:'Builder', d:'Una scaletta di 10 mattoncini'},
   {id:'gd', e:'🟦', n:'Geometry Master', en:'Geometry Master', d:'Finisci Geometria'},
   {id:'gd2', e:'🙃', n:'Sottosopra', en:'Upside down', d:'Finisci Geometria 2'},
+  {id:'gaunt', e:'⚡', n:'Coordinazione', en:'Coordination', d:'Supera una SFIDA senza farti male'},
   {id:'tramp', e:'🤸', n:'Re del trampolino', en:'Trampoline king', d:'Fai 2500 punti al Trampolino'},
   {id:'finale', e:'🌍', n:'Campione del mondo', en:'World champion', d:'Finisci il Gran finale'},
   {id:'bank', e:'🐷', n:'Salvadanaio d\'oro', en:'Golden piggy bank', d:'3000 ★ nel salvadanaio'}
@@ -1454,6 +1481,7 @@ function respawnFromCheckpoint(){
   for (const d of L.drops){ d.falling = false; d.done = false; d.y = d.y0; d.vy = 0; d.rot = 0; }
   for (const o of L.obst) if (o.home > x0){ o.x = o.home; o.hit = false; o.dy = 0; o.rot = 0; o.vx = 0; o.vy = 0; }
   for (const f of L.friends) if (f.x > x0) f.done = false;
+  for (const g of L.gaunts || []) if (g.x0 > x0){ g.done = false; g.hits = L.cpHit && L.cpList.some(c=>c.g===g && c.x===x0) ? (L.hitsTaken || 0) : null; }
   pet.x = P.x - 60; camX = P.x - VW*0.3; state = 'play'; levelT = 0;
 }
 function smashObst(o, ox, oy, kind){
@@ -1754,7 +1782,13 @@ function update(dt){
   }
   if (P.boost > 0 && Math.random() < 0.8) parts.push({x:P.x + VW*0.7*Math.random(), y:P.y - 20 - Math.random()*260, vx:-900, vy:0, life:0.25, max:0.25, c:'rgba(255,255,255,.7)', sz:40 + Math.random()*60, k:'line'});
   if (combo >= 8 && !P.ground && Math.random() < 0.9) parts.push({x:P.x - 6, y:P.y - 30, vx:-40, vy:0, life:0.5, max:0.5, c:'hsl(' + ((t*400) % 360) + ',95%,62%)', sz:7, k:'dot'});
-  if (state==='play' && L.cpX && !L.cpHit && P.x > L.cpX){ L.cpHit = true; L.cpCount = count; L.cpCoin = L.coinRun; sfx.check(); pops.push({x:P.x, y:P.y - 110, text:'CHECKPOINT! 🚩', life:1.4, col:'#7ae040'}); burst(L.cpX, 300, 18, 260, ['#7ae040','#fff','#ffd23f']); }
+  const ncp = state==='play' && L.cpList ? L.cpList.find(c=>c.x > (L.cpHit ? L.cpX : -1e9)) : null;
+  if (ncp && P.x > ncp.x){ L.cpX = ncp.x; L.cpHit = true; L.cpCount = count; L.cpCoin = L.coinRun; sfx.check(); pops.push({x:P.x, y:P.y - 110, text:'CHECKPOINT! 🚩', life:1.4, col:'#7ae040'}); burst(ncp.x, 300, 18, 260, ['#7ae040','#fff','#ffd23f']);
+    if (ncp.g){ ncp.g.hits = L.hitsTaken || 0; bigText = {a:'⚡ SFIDA! ⚡', b:'Salto · dash · scivolata… a ritmo!', t:0, col:'#ff3df0'}; } }
+  for (const g of L.gaunts || []) if (!g.done && state==='play' && P.x > g.endX && P.ground){
+    g.done = true; count += 20; hudBump = 1; sfx.fanfare(); for (let i=0;i<40;i++) confetti(); flash = 0.3;
+    bigText = {a:'SFIDA SUPERATA! +20', b:'Challenge complete! Che coordinazione!', t:0, col:'#ffd23f'};
+    if (g.hits != null && (L.hitsTaken || 0) === g.hits) medal('gaunt'); }
   if (state==='play' && !cpReached && P.x >= L.finishX*0.5){ cpReached = true; sfx.check(); pop('Halfway! Metà strada!', '#22b8a7'); }
   for (const pw of L.pows){
     if (pw.taken) continue;
@@ -3183,6 +3217,8 @@ function drawPlatform(p, st){
   if (p.sq){ ctx.fillStyle = '#120a3a'; ctx.fillRect(sx, p.y, p.w, 110); return; }
   PLAT[p.th](p, sx);
   platPolish(p, sx);
+  if (p.gaunt){ const hue = (t*120 + p.x*0.03) % 360; ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = 'hsl(' + hue + ',100%,60%)'; ctx.shadowColor = ctx.fillStyle; ctx.shadowBlur = 16; ctx.fillRect(sx, p.y - 2, p.w, 5);
+    ctx.globalAlpha = 0.35; for (let cx = sx + 20; cx < sx + p.w - 20; cx += 44){ if (cx < -30 || cx > VW + 30) continue; ctx.beginPath(); ctx.moveTo(cx, p.y + 14); ctx.lineTo(cx + 12, p.y + 24); ctx.lineTo(cx, p.y + 34); ctx.lineWidth = 4; ctx.strokeStyle = ctx.fillStyle; ctx.stroke(); } ctx.restore(); }
 }
 const ACCENT = {city:'#ff5ad1', school:'#3ad1ff', nursery:'#ff9ef0', desert:'#ffb238', town:'#ff6b4a', lake:'#3ad1ff', chess:'#b78cff', mix:'#ffd23f', home:'#ff3df0'};
 function platPolish(p, sx){
@@ -3398,7 +3434,9 @@ function drawWorld(st){
   for (const bo of L.boosts) drawBoost(bo);
   for (const rg of L.rings) drawRing(rg);
   for (const c of L.coins) drawCoin(c);
-  if (L.cpX){ const fx = L.cpX - camX; if (fx > -40 && fx < VW + 40){ ctx.strokeStyle = '#fff'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(fx, 400); ctx.lineTo(fx, 320); ctx.stroke(); ctx.fillStyle = L.cpHit ? '#7ae040' : '#ff4d6d'; ctx.beginPath(); ctx.moveTo(fx, 322); ctx.lineTo(fx + 34 + Math.sin(t*8)*3, 334); ctx.lineTo(fx, 346); ctx.closePath(); ctx.fill(); } }
+  for (const cp of L.cpList || []){ const fx = cp.x - camX, hitC = L.cpHit && cp.x <= L.cpX;
+    if (cp.g && !hitC && fx > -200 && fx < VW + 200){ const by = 250 + Math.sin(t*4)*5; ctx.save(); ctx.font = '800 30px ' + FONT; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineWidth = 7; ctx.strokeStyle = '#1d1640'; ctx.strokeText('⚡ SFIDA ⚡', fx + 180, by); ctx.fillStyle = 'hsl(' + ((t*120) % 360) + ',100%,65%)'; ctx.fillText('⚡ SFIDA ⚡', fx + 180, by); ctx.restore(); }
+    if (fx > -40 && fx < VW + 40){ ctx.strokeStyle = '#fff'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(fx, 400); ctx.lineTo(fx, 320); ctx.stroke(); ctx.fillStyle = hitC ? '#7ae040' : '#ff4d6d'; ctx.beginPath(); ctx.moveTo(fx, 322); ctx.lineTo(fx + 34 + Math.sin(t*8)*3, 334); ctx.lineTo(fx, 346); ctx.closePath(); ctx.fill(); } }
   drawBoss();
   for (const bl of L.balloons) if (!bl.popped) drawBalloon(bl);
   drawFinish();
