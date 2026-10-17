@@ -286,7 +286,13 @@ function resize(){
   S = CH/VH; VW = CW/S; OY = 0;
   if (VW < 700){ S = CW/700; VW = 700; OY = (CH - VH*S)/2; }
 }
-addEventListener('resize', resize); resize();
+addEventListener('resize', onViewChange); resize();
+addEventListener('orientationchange', onViewChange);
+if (window.visualViewport) visualViewport.addEventListener('resize', onViewChange);
+function onViewChange(){
+  // phones report the new size late after a rotation: measure again a few times
+  resize(); for (const ms of [120, 400, 900]) setTimeout(()=>{ resize(); if (typeof watchRotate === 'function') watchRotate(); }, ms);
+}
 
 const store = {
   get(k, d){ try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch(e){ return d; } },
@@ -3585,12 +3591,22 @@ function enterFull(){
   try { const p = req.call(el); if (p && p.then) p.then(lockLand).catch(()=>{}); else lockLand(); } catch(e){}
 }
 function lockLand(){ try { screen.orientation && screen.orientation.lock && screen.orientation.lock('landscape').catch(()=>{}); } catch(e){} }
-function checkRotate(){
-  if (!rotateSeen && innerHeight > innerWidth && matchMedia('(pointer:coarse)').matches){ rotateSeen = true; const prev = state; state = 'paused'; screens.rotate.hidden = false; screens.rotate.dataset.prev = prev; }
+const PLAY_STATES = ['play','race','mini','tramp'];
+function checkRotate(){ watchRotate(); }
+function watchRotate(){
+  // portrait during a game: pause with "turn your phone"; back to landscape: carry on by itself
+  if (!matchMedia('(pointer:coarse)').matches) return;
+  const portrait = innerHeight > innerWidth;
+  if (portrait && PLAY_STATES.includes(state) && screens.rotate.hidden){ screens.rotate.dataset.prev = state; state = 'paused'; holding = false; screens.rotate.hidden = false; }
+  else if (!portrait && !screens.rotate.hidden) rotateResume();
+}
+function rotateResume(){
+  screens.rotate.hidden = true; const prev = screens.rotate.dataset.prev;
+  if (state==='paused' && screens.pause.hidden && PLAY_STATES.includes(prev)){ state = prev; if (prev==='play' && P) countdown = Math.max(countdown, 2); }
 }
 function go(){
   if (recorder) recorder.stop();
-  if (LEVELS[curLi].type==='tramp'){ ensureAudio(); hideAll(); goFull(); checkRotate(); startTramp(); return; }
+  if (LEVELS[curLi].type==='tramp'){ ensureAudio(); hideAll(); goFull(); startTramp(); checkRotate(); return; }
   ensureAudio(); hideAll(); state = 'play'; levelT = 0; countdown = 3; goFull(); checkRotate();
 }
 
@@ -3829,7 +3845,7 @@ document.getElementById('mapBack').addEventListener('click', goHome);
 document.getElementById('stBack').addEventListener('click', goMap);
 document.getElementById('custBack').addEventListener('click', ()=>{ AV.name = document.getElementById('nameIn').value.replace(/[<>]/g,'').trim().slice(0,12); saveAV(); goHome(); });
 document.getElementById('introGo').addEventListener('click', go);
-document.getElementById('rotOk').addEventListener('click', ()=>{ screens.rotate.hidden = true; state = screens.rotate.dataset.prev || 'play'; });
+document.getElementById('rotOk').addEventListener('click', ()=>{ rotateResume(); });
 document.getElementById('pResume').addEventListener('click', resumeGame);
 document.getElementById('pMap').addEventListener('click', goMap);
 document.getElementById('pMusic').addEventListener('click', ()=>{ musicOn = !musicOn; store.set('corri3-music', musicOn); if (musOut) musOut.gain.value = musicOn ? 0.78 : 0; refreshToggles(); });
@@ -3993,10 +4009,14 @@ cv.addEventListener('contextmenu', e=>e.preventDefault());
 startLevel(0, true); setTitle(); voiceLoadAll();
 if (store.get('corri3-welcomed', false)) show('home'); else { buildWelcome(); show('welcome'); }
 let last = performance.now();
+let frameErr = 0;
 function frame(now){
-  const dt = Math.min(0.033, Math.max(0, (now-last)/1000)); last = now;
-  update(dt); draw(); drawAvatarPreview(dt);
   requestAnimationFrame(frame);
+  const dt = Math.min(0.033, Math.max(0, (now-last)/1000)); last = now;
+  // never let one bad frame freeze the whole game
+  try { update(dt); } catch(e){ if (frameErr++ < 5) console.error(e); }
+  try { draw(); } catch(e){ if (frameErr++ < 5) console.error(e); try { ctx.restore(); ctx.setTransform(1,0,0,1,0,0); ctx.filter = 'none'; ctx.globalAlpha = 1; } catch(_){} }
+  try { drawAvatarPreview(dt); } catch(e){}
 }
 requestAnimationFrame(frame);
 </script>
